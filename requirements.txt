@@ -4,3 +4,5 @@ pandas
 numpy
 json
 openpyxl
+pydantic
+typing
