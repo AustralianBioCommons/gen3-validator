@@ -105,3 +105,20 @@ class ParseXlsxMetadata:
 
         with open(json_path, 'w') as f:
             json.dump(data_list, f)
+
+    def write_dict_to_json(self, output_dir: str) -> None:
+        """
+        Writes a dictionary to a JSON file.
+
+        Args:
+            data_dict (dict): The dictionary to be written to the JSON file.
+            output_dir (str): The directory where JSON files will be created.
+
+        Returns:
+            None
+        """
+        for key, value in self.xlsx_data_dict.items():
+            json_path = f"{output_dir}/{key}.json"
+            self.pd_to_json(key, json_path)
+
+        print(f"JSON files written to {output_dir}")
