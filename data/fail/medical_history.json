@@ -3,7 +3,7 @@
         "atrial_fibrillation": "yes",
         "cabg": "yes",
         "cvd_death": "yes",
-        "cvd_family_history": "yes",
+        "cvd_family_history": 90,
         "cvd_non_fatal_10_year": "yes",
         "cvd_reported": "NO",
         "cvd_self_reported": "yes",

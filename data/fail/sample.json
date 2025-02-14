@@ -2,12 +2,12 @@
     {
         "alternate_timepoint": "1f56770b0b",
         "baseline_timepoint": true,
-        "freeze_thaw_cycles": 10,
+        "freeze_thaw_cycles": "10",
         "sample_collection_method": "2fddbe7d09",
         "sample_id": "d4f31f7bb6",
         "sample_in_preservation": "snap Frozen",
         "sample_in_storage": "yes",
-        "sample_provider": "USYD",
+        "sample_provider": 45,
         "sample_source": "UBERON:3781554",
         "sample_storage_method": "Autoclave",
         "sample_type": "59a8fd8005",
@@ -35,6 +35,25 @@
             "submitter_id": "subject_071bc3e81b"
         },
         "submitter_id": "sample_f7645c1221",
+        "type": "sample"
+    },
+    {
+        "alternate_timepoint": "1f56770b0b",
+        "baseline_timepoint": true,
+        "freeze_thaw_cycles": 10,
+        "sample_collection_method": "2fddbe7d09",
+        "sample_id": "d4f31f7bb6",
+        "sample_in_preservation": "snap Frozen",
+        "sample_in_storage": "yes",
+        "sample_provider": "USYD",
+        "sample_source": "UBERON:3781554",
+        "sample_storage_method": "not stored",
+        "sample_type": "59a8fd8005",
+        "storage_location": "UMELB",
+        "subjects": {
+            "submitter_id": "subject_e5616257f5"
+        },
+        "submitter_id": "sample_efdbe56d21",
         "type": "sample"
     }
 ]

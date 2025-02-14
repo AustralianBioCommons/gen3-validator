@@ -22,6 +22,7 @@ class ResolveSchema:
             self.schema_def, self.schema_term
         )
         self.schema_list_resolved = self.resolve_all_references()
+        self.schema_resolved = self.schema_list_to_json(self.schema_list_resolved)
 
     def read_json(self, path: str) -> dict:
         """
@@ -236,6 +237,24 @@ class ResolveSchema:
                 return node
 
         return resolve_node(schema)
+
+    def schema_list_to_json(self, schema_list: list) -> dict:
+        """
+        Converts a list of JSON schemas to a dictionary where each key is the schema id
+        with '.yaml' appended, and the value is the schema content.
+
+        Parameters:
+        - schema_list (list): A list of JSON schemas.
+
+        Returns:
+        - dict: A dictionary with schema ids as keys and schema contents as values.
+        """
+        schema_dict = {}
+        for schema in schema_list:
+            schema_id = schema.get("id")
+            if schema_id:
+                schema_dict[f"{schema_id}.yaml"] = schema
+        return schema_dict
 
     def resolve_all_references(self) -> list:
         """

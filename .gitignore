@@ -1,5 +1,6 @@
 .DS_Store
 data/.DS_Store
+data/restricted
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
