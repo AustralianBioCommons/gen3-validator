@@ -15,11 +15,12 @@ class ParseXlsxMetadata:
       e.g. if you name your links as "nodeName_link" you may set this to "_link"
     """
 
-    def __init__(self, xlsx_path: str, link_suffix: str = 's'):
+    def __init__(self, xlsx_path: str, link_suffix: str = 's', skip_rows: int = 0):
         self.xlsx_path = xlsx_path
         self.xlsx_data_dict = self.parse_metadata_template()
         self.sheet_names = self.get_sheet_names()
         self.link_suffix = link_suffix
+        self.skip_rows = skip_rows
 
     def parse_metadata_template(self) -> dict:
         """
@@ -28,21 +29,23 @@ class ParseXlsxMetadata:
         This function reads an Excel file specified by the `xlsx_path` and loads
         each sheet into a dictionary where the keys are the sheet names and the
         values are the DataFrames representing the data in those sheets. The first
-        row of each DataFrame is removed.
+        few rows of each DataFrame are removed based on the `skip_rows` attribute.
 
         Args:
         - xlsx_path (str): The path to the Excel file to be parsed.
 
         Returns:
         - dict: A dictionary where each key is a sheet name and each value is a
-          DataFrame containing the data from that sheet, with the first row removed.
+          DataFrame containing the data from that sheet, with the specified number
+          of rows removed.
         """
         # load xlsx file
         pd_dict = pd.read_excel(self.xlsx_path, sheet_name=None)
 
-        # in each pandas data frame in the dict, remove the first row
+        # in each pandas data frame in the dict, remove the specified number of rows
         for key in pd_dict.keys():
-            pd_dict[key] = pd_dict[key].iloc[1:, :]
+            if self.skip_rows > 0:
+                pd_dict[key] = pd_dict[key].iloc[self.skip_rows:, :]
 
         return pd_dict
 
