@@ -64,6 +64,59 @@ class ResolveSchema:
         else:
             return node_id, links
 
+    def get_node_category(self, node_name: str) -> tuple:
+        """
+        Retrieve the category and ID for a given node, excluding certain nodes.
+
+        Parameters:
+        - node_name (str): The name of the node.
+
+        Returns:
+        - tuple: A tuple containing the node ID and its category, or None if the node is excluded.
+        """
+        category = self.schema[node_name]["category"]
+        node_id = self.schema[node_name]["id"]
+        return node_id, category
+
+    def get_node_properties(self, node_name: str) -> tuple:
+        """
+        Retrieve the properties for a given node.
+
+        Parameters:
+        - node_name (str): The name of the node.
+
+        Returns:
+        - tuple: A tuple containing the node ID and its properties.
+        """
+        properties = {
+            k: v for k, v in self.schema[node_name]["properties"].items()
+            if k != "$ref"
+        }
+        property_keys = list(properties.keys())
+        node_id = self.schema[node_name]["id"]
+        return node_id, property_keys
+
+    def generate_node_lookup(self) -> dict:
+        node_lookup = {}
+        excluded_nodes = [
+            "_definitions.yaml",
+            "_terms.yaml",
+            "_settings.yaml",
+            "program.yaml",
+        ]
+
+        for node in self.nodes:
+            if node in excluded_nodes:
+                continue
+
+            category = self.get_node_category(node)
+            if category:
+                category = category[1]
+
+            props = self.get_node_properties(node)
+            node_lookup[node] = {"category": category, "properties": props}
+        return node_lookup
+
     def find_upstream_downstream(self, node_name: str) -> list:
         """
         Takes a node name and returns the upstream and downstream nodes.
