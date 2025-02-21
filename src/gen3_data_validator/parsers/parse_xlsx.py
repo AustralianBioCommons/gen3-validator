@@ -48,6 +48,23 @@ class ParseXlsxMetadata:
                 pd_dict[key] = pd_dict[key].iloc[self.skip_rows:, :]
 
         return pd_dict
+    
+    def parse_metadata_clinical(self, node_lookup: dict) -> dict:
+        """
+        Uses entity lookup from ResolveSchema class to split variables based on entity 
+
+        Returns:
+            dict: _description_
+        """
+        
+        # load xlsx file
+        pd_dict = pd.read_excel(self.xlsx_path, sheet_name=None)
+        
+        pd_dict_prop = pd_dict[0].keys().tolist()
+        print(pd_dict_prop)
+        
+        
+        
 
     def get_sheet_names(self) -> list:
         return list(self.xlsx_data_dict.keys())
