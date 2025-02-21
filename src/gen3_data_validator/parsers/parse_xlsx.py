@@ -60,8 +60,16 @@ class ParseXlsxMetadata:
         # load xlsx file
         pd_dict = pd.read_excel(self.xlsx_path, sheet_name=None)
         
-        pd_dict_prop = pd_dict[0].keys().tolist()
-        print(pd_dict_prop)
+        # pull keys from first value in dict
+        
+        # for each key, figure out what entity it belongs to 
+        # using the node_lookup
+        
+        # create a new dict, where they key is the entity, 
+        # and the value is the subset of variables that belong to that identity
+        
+        # return the new dict
+        
         
         
         
