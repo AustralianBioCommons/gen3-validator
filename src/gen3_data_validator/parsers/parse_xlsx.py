@@ -17,10 +17,10 @@ class ParseXlsxMetadata:
 
     def __init__(self, xlsx_path: str, link_suffix: str = 's', skip_rows: int = 0):
         self.xlsx_path = xlsx_path
+        self.skip_rows = skip_rows
         self.xlsx_data_dict = self.parse_metadata_template()
         self.sheet_names = self.get_sheet_names()
         self.link_suffix = link_suffix
-        self.skip_rows = skip_rows
 
     def parse_metadata_template(self) -> dict:
         """
