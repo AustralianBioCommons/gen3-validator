@@ -1,0 +1,32 @@
+@startuml
+class ResolveSchema {
+    read_json()
+    get_nodes()
+    get_node_link()
+    get_node_category()
+    get_node_properties()
+    generate_node_lookup()
+    find_upstream_downstream()
+    get_all_node_pairs()
+    get_node_order()
+    split_json()
+    return_schema()
+    resolve_references()
+    resolve_node()
+    schema_list_to_json()
+    resolve_all_references()
+    return_resolved_schema()
+        schema_path
+    schema
+    nodes
+    node_pairs
+    node_order
+    schema_list
+    schema_def
+    schema_term
+    schema_def_resolved
+    schema_list_resolved
+    schema_resolved
+    __init__()
+}
+@enduml
