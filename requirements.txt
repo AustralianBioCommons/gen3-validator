@@ -6,3 +6,4 @@ openpyxl
 pydantic
 typing
 pytest
+uuid
