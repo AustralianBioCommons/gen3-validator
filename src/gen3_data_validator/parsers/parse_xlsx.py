@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+import os
 
 
 class ParseXlsxMetadata:
@@ -120,6 +121,9 @@ class ParseXlsxMetadata:
         Returns:
             None
         """
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
         for key, value in self.xlsx_data_dict.items():
             json_path = f"{output_dir}/{key}.json"
             self.pd_to_json(key, json_path)
