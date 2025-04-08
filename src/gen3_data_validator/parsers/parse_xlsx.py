@@ -11,16 +11,15 @@ class ParseXlsxMetadata:
     gen3 compatible format.
 
     Attributes:
-    - xlsx_path (str): The path to the Excel file containing metadata templates.
-    - link_suffix (str): A suffix to append to link identifiers, default is 's'.
-      e.g. if you name your links as "nodeName_link" you may set this to "_link"
+        xlsx_path (str): The path to the Excel file containing metadata templates.
+        link_suffix (str): A suffix to append to link identifiers, default is 's'.
+            e.g. if you name your links as "nodeName_link" you may set this to "_link"
     """
 
     def __init__(self, xlsx_path: str, link_suffix: str = 's', skip_rows: int = 0):
         self.xlsx_path = xlsx_path
         self.skip_rows = skip_rows
-        self.xlsx_data_dict = self.parse_metadata_template()
-        self.sheet_names = self.get_sheet_names()
+        self.xlsx_data_dict = None
         self.link_suffix = link_suffix
 
     def parse_metadata_template(self) -> dict:
@@ -32,13 +31,10 @@ class ParseXlsxMetadata:
         values are the DataFrames representing the data in those sheets. The first
         few rows of each DataFrame are removed based on the `skip_rows` attribute.
 
-        Args:
-        - xlsx_path (str): The path to the Excel file to be parsed.
-
         Returns:
-        - dict: A dictionary where each key is a sheet name and each value is a
-          DataFrame containing the data from that sheet, with the specified number
-          of rows removed.
+            dict: A dictionary where each key is a sheet name and each value is a
+            DataFrame containing the data from that sheet, with the specified number
+            of rows removed.
         """
         # load xlsx file
         pd_dict = pd.read_excel(self.xlsx_path, sheet_name=None)
@@ -47,13 +43,21 @@ class ParseXlsxMetadata:
         for key in pd_dict.keys():
             if self.skip_rows > 0:
                 pd_dict[key] = pd_dict[key].iloc[self.skip_rows:, :]
+        
+        self.xlsx_data_dict = pd_dict
 
         return pd_dict
 
     def get_sheet_names(self) -> list:
+        """
+        Retrieves the names of all sheets in the Excel file.
+
+        Returns:
+            list: A list of sheet names present in the Excel file.
+        """
         return list(self.xlsx_data_dict.keys())
 
-    def get_pk_fk_pairs(self, sheet_name: str) -> tuple:
+    def get_pk_fk_pairs(self, xlsx_data_dict: dict, sheet_name: str) -> tuple:
         """
         Extracts the primary key (PK) and foreign key (FK) column names from a
         specified sheet.
@@ -63,35 +67,37 @@ class ParseXlsxMetadata:
         and the second column is the foreign key.
 
         Args:
-        - sheet_name (str): The name of the sheet from which to extract the PK and FK.
+            xlsx_data_dict (dict): A dictionary where each key is a sheet name and
+            each value is a DataFrame.
+            sheet_name (str): The name of the sheet from which to extract the PK and FK.
 
         Returns:
-        - tuple: A tuple containing the primary key and foreign key column names.
+            tuple: A tuple containing the primary key and foreign key column names.
         """
-        sheet = self.xlsx_data_dict[sheet_name]
+        sheet = xlsx_data_dict[sheet_name]
         first_two_columns = sheet.columns[:2].tolist()
         pk = first_two_columns[0]
         fk = first_two_columns[1]
         return pk, fk
 
-    def pd_to_json(self, sheet_name: str, json_path: str) -> None:
+    def pd_to_json(self, xlsx_data_dict: dict, sheet_name: str, json_path: str) -> None:
         """
         Converts a specified sheet from the metadata dictionary to a JSON file.
         Also formats and renames the primary and foreign keys into a gen3 compatible
         format.
 
         Args:
-        - metadata (dict): A dictionary where each key is a sheet name and each
-          value is a DataFrame.
-        - sheet_name (str): The name of the sheet to convert to JSON.
-        - json_path (str): The path to the JSON file to be saved.
+            xlsx_data_dict (dict): A dictionary where each key is a sheet name and each
+            value is a DataFrame.
+            sheet_name (str): The name of the sheet to convert to JSON.
+            json_path (str): The path to the JSON file to be saved.
 
         Returns:
-        - None
+            None
         """
-        pk, fk = self.get_pk_fk_pairs(sheet_name)
+        pk, fk = self.get_pk_fk_pairs(xlsx_data_dict, sheet_name)
 
-        df = self.xlsx_data_dict[sheet_name]
+        df = xlsx_data_dict[sheet_name]
         df = df.replace({np.nan: None, pd.NaT: None})
         df['type'] = sheet_name  # add node / entity name
         fk_name = fk.split('_uid')[0]  # getting foreign key node name
@@ -111,12 +117,12 @@ class ParseXlsxMetadata:
         with open(json_path, 'w') as f:
             json.dump(data_list, f)
 
-    def write_dict_to_json(self, output_dir: str) -> None:
+    def write_dict_to_json(self, xlsx_data_dict: dict, output_dir: str) -> None:
         """
-        Writes a dictionary to a JSON file.
+        Writes a dictionary of pandas DataFrames to JSON files.
 
         Args:
-            data_dict (dict): The dictionary to be written to the JSON file.
+            xlsx_data_dict (dict): The dictionary containing DataFrames to be written to JSON files.
             output_dir (str): The directory where JSON files will be created.
 
         Returns:
@@ -125,8 +131,8 @@ class ParseXlsxMetadata:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         
-        for key, value in self.xlsx_data_dict.items():
+        for key, value in xlsx_data_dict.items():
             json_path = f"{output_dir}/{key}.json"
-            self.pd_to_json(key, json_path)
+            self.pd_to_json(xlsx_data_dict, key, json_path)
 
         print(f"JSON files written to {output_dir}")
