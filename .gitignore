@@ -2,6 +2,7 @@
 data/.DS_Store
 data/restricted
 logs
+schema/gen3_schema.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
