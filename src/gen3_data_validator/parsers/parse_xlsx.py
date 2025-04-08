@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 import os
-
+import numpy as np
 
 class ParseXlsxMetadata:
     """
@@ -92,6 +92,7 @@ class ParseXlsxMetadata:
         pk, fk = self.get_pk_fk_pairs(sheet_name)
 
         df = self.xlsx_data_dict[sheet_name]
+        df = df.replace({np.nan: None, pd.NaT: None})
         df['type'] = sheet_name  # add node / entity name
         fk_name = fk.split('_uid')[0]  # getting foreign key node name
 
