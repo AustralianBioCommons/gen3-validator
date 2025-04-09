@@ -2,6 +2,9 @@ import json
 import pandas as pd
 import os
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ParseXlsxMetadata:
     """
@@ -36,8 +39,13 @@ class ParseXlsxMetadata:
             DataFrame containing the data from that sheet, with the specified number
             of rows removed.
         """
-        # load xlsx file
-        pd_dict = pd.read_excel(self.xlsx_path, sheet_name=None)
+        try:
+            # load xlsx file
+            pd_dict = pd.read_excel(self.xlsx_path, sheet_name=None)
+            logger.info(f"Excel file {self.xlsx_path} loaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to load Excel file {self.xlsx_path}: {e}")
+            raise
 
         # in each pandas data frame in the dict, remove the specified number of rows
         for key in pd_dict.keys():
@@ -45,6 +53,7 @@ class ParseXlsxMetadata:
                 pd_dict[key] = pd_dict[key].iloc[self.skip_rows:, :]
         
         self.xlsx_data_dict = pd_dict
+        logger.debug("Parsed metadata template and removed specified rows.")
 
         return pd_dict
 
@@ -55,7 +64,9 @@ class ParseXlsxMetadata:
         Returns:
             list: A list of sheet names present in the Excel file.
         """
-        return list(self.xlsx_data_dict.keys())
+        sheet_names = list(self.xlsx_data_dict.keys())
+        logger.info(f"Retrieved sheet names: {sheet_names}")
+        return sheet_names
 
     def get_pk_fk_pairs(self, xlsx_data_dict: dict, sheet_name: str) -> tuple:
         """
@@ -78,6 +89,7 @@ class ParseXlsxMetadata:
         first_two_columns = sheet.columns[:2].tolist()
         pk = first_two_columns[0]
         fk = first_two_columns[1]
+        logger.debug(f"Extracted PK: {pk} and FK: {fk} from sheet: {sheet_name}")
         return pk, fk
 
     def pd_to_json(self, xlsx_data_dict: dict, sheet_name: str, json_path: str) -> None:
@@ -95,27 +107,32 @@ class ParseXlsxMetadata:
         Returns:
             None
         """
-        pk, fk = self.get_pk_fk_pairs(xlsx_data_dict, sheet_name)
+        try:
+            pk, fk = self.get_pk_fk_pairs(xlsx_data_dict, sheet_name)
 
-        df = xlsx_data_dict[sheet_name]
-        df = df.replace({np.nan: None, pd.NaT: None})
-        df['type'] = sheet_name  # add node / entity name
-        fk_name = fk.split('_uid')[0]  # getting foreign key node name
+            df = xlsx_data_dict[sheet_name]
+            df = df.replace({np.nan: None, pd.NaT: None})
+            df['type'] = sheet_name  # add node / entity name
+            fk_name = fk.split('_uid')[0]  # getting foreign key node name
 
-        df['key_fk'] = df[fk].tolist()  # creating var for fk
-        df['key_pk'] = df[pk].tolist()  # creating var for pk
+            df['key_fk'] = df[fk].tolist()  # creating var for fk
+            df['key_pk'] = df[pk].tolist()  # creating var for pk
 
-        # format foreign key
-        df[f"{fk_name}{self.link_suffix}"] = df[fk].apply(lambda x: {"submitter_id": x})
-        df_cleaned = df.where(pd.notnull(df), None)  # removing NaN values
-        # adding primary key as submitter_id key
-        df_cleaned['submitter_id'] = df_cleaned[pk].tolist()
-        # removing _uid columns
-        df_cleaned = df_cleaned.loc[:, ~df_cleaned.columns.str.endswith('_uid')]
-        data_list = df_cleaned.to_dict(orient='records')  # converting to dict
+            # format foreign key
+            df[f"{fk_name}{self.link_suffix}"] = df[fk].apply(lambda x: {"submitter_id": x})
+            df_cleaned = df.where(pd.notnull(df), None)  # removing NaN values
+            # adding primary key as submitter_id key
+            df_cleaned['submitter_id'] = df_cleaned[pk].tolist()
+            # removing _uid columns
+            df_cleaned = df_cleaned.loc[:, ~df_cleaned.columns.str.endswith('_uid')]
+            data_list = df_cleaned.to_dict(orient='records')  # converting to dict
 
-        with open(json_path, 'w') as f:
-            json.dump(data_list, f)
+            with open(json_path, 'w') as f:
+                json.dump(data_list, f)
+            logger.info(f"Sheet {sheet_name} converted to JSON and saved to {json_path}.")
+        except Exception as e:
+            logger.error(f"Failed to convert sheet {sheet_name} to JSON: {e}")
+            raise
 
     def write_dict_to_json(self, xlsx_data_dict: dict, output_dir: str) -> None:
         """
@@ -128,11 +145,16 @@ class ParseXlsxMetadata:
         Returns:
             None
         """
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        
-        for key, value in xlsx_data_dict.items():
-            json_path = f"{output_dir}/{key}.json"
-            self.pd_to_json(xlsx_data_dict, key, json_path)
+        try:
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+                logger.info(f"Created output directory: {output_dir}")
+            
+            for key, value in xlsx_data_dict.items():
+                json_path = f"{output_dir}/{key}.json"
+                self.pd_to_json(xlsx_data_dict, key, json_path)
 
-        print(f"JSON files written to {output_dir}")
+            logger.info(f"JSON files written to {output_dir}")
+        except Exception as e:
+            logger.error(f"Failed to write JSON files to {output_dir}: {e}")
+            raise
