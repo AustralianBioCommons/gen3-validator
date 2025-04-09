@@ -1,6 +1,8 @@
 import json
 from collections import defaultdict, deque
+import logging
 
+logger = logging.getLogger(__name__)
 
 class ResolveSchema:
     def __init__(self, schema_path: str):
@@ -11,18 +13,22 @@ class ResolveSchema:
         - schema_path (str): The path to the JSON schema file.
         """
         self.schema_path = schema_path
-        self.schema = self.read_json(self.schema_path)
-        self.nodes = self.get_nodes()
-        self.node_pairs = self.get_all_node_pairs()
-        self.node_order = self.get_node_order(edges=self.node_pairs)
-        self.schema_list = self.split_json()
-        self.schema_def = self.return_schema("_definitions.yaml")
-        self.schema_term = self.return_schema("_terms.yaml")
-        self.schema_def_resolved = self.resolve_references(
-            self.schema_def, self.schema_term
-        )
-        self.schema_list_resolved = self.resolve_all_references()
-        self.schema_resolved = self.schema_list_to_json(self.schema_list_resolved)
+        try:
+            self.schema = self.read_json(self.schema_path)
+            self.nodes = self.get_nodes()
+            self.node_pairs = self.get_all_node_pairs()
+            self.node_order = self.get_node_order(edges=self.node_pairs)
+            self.schema_list = self.split_json()
+            self.schema_def = self.return_schema("_definitions.yaml")
+            self.schema_term = self.return_schema("_terms.yaml")
+            self.schema_def_resolved = self.resolve_references(
+                self.schema_def, self.schema_term
+            )
+            self.schema_list_resolved = self.resolve_all_references()
+            self.schema_resolved = self.schema_list_to_json(self.schema_list_resolved)
+        except Exception as e:
+            logger.error(f"Failed to initialize ResolveSchema: {e}")
+            raise
 
     def read_json(self, path: str) -> dict:
         """
@@ -34,8 +40,18 @@ class ResolveSchema:
         Returns:
         - dict: The contents of the JSON file.
         """
-        with open(path) as f:
-            return json.load(f)
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except FileNotFoundError:
+            logger.error(f"JSON file not found: {path}")
+            raise
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding JSON from file {path}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error reading JSON file {path}: {e}")
+            raise
 
     def get_nodes(self) -> list:
         """
@@ -44,8 +60,12 @@ class ResolveSchema:
         Returns:
         - list: A list of node names.
         """
-        nodes = list(self.schema.keys())
-        return nodes
+        try:
+            nodes = list(self.schema.keys())
+            return nodes
+        except Exception as e:
+            logger.error(f"Error retrieving nodes from schema: {e}")
+            raise
 
     def get_node_link(self, node_name: str) -> tuple:
         """
@@ -57,12 +77,19 @@ class ResolveSchema:
         Returns:
         - tuple: A tuple containing the node ID and its links.
         """
-        links = self.schema[node_name]["links"]
-        node_id = self.schema[node_name]["id"]
-        if "subgroup" in links[0]:
-            return node_id, links[0]["subgroup"]
-        else:
-            return node_id, links
+        try:
+            links = self.schema[node_name]["links"]
+            node_id = self.schema[node_name]["id"]
+            if "subgroup" in links[0]:
+                return node_id, links[0]["subgroup"]
+            else:
+                return node_id, links
+        except KeyError as e:
+            logger.error(f"Missing key {e} in node {node_name}")
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving node link for {node_name}: {e}")
+            raise
 
     def get_node_category(self, node_name: str) -> tuple:
         """
@@ -74,9 +101,16 @@ class ResolveSchema:
         Returns:
         - tuple: A tuple containing the node ID and its category, or None if the node is excluded.
         """
-        category = self.schema[node_name]["category"]
-        node_id = self.schema[node_name]["id"]
-        return node_id, category
+        try:
+            category = self.schema[node_name]["category"]
+            node_id = self.schema[node_name]["id"]
+            return node_id, category
+        except KeyError as e:
+            logger.error(f"Missing key {e} in node {node_name}")
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving node category for {node_name}: {e}")
+            raise
 
     def get_node_properties(self, node_name: str) -> tuple:
         """
@@ -88,13 +122,20 @@ class ResolveSchema:
         Returns:
         - tuple: A tuple containing the node ID and its properties.
         """
-        properties = {
-            k: v for k, v in self.schema[node_name]["properties"].items()
-            if k != "$ref"
-        }
-        property_keys = list(properties.keys())
-        node_id = self.schema[node_name]["id"]
-        return node_id, property_keys
+        try:
+            properties = {
+                k: v for k, v in self.schema[node_name]["properties"].items()
+                if k != "$ref"
+            }
+            property_keys = list(properties.keys())
+            node_id = self.schema[node_name]["id"]
+            return node_id, property_keys
+        except KeyError as e:
+            logger.error(f"Missing key {e} in node {node_name}")
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving node properties for {node_name}: {e}")
+            raise
 
     def generate_node_lookup(self) -> dict:
         node_lookup = {}
@@ -109,12 +150,16 @@ class ResolveSchema:
             if node in excluded_nodes:
                 continue
 
-            category = self.get_node_category(node)
-            if category:
-                category = category[1]
+            try:
+                category = self.get_node_category(node)
+                if category:
+                    category = category[1]
 
-            props = self.get_node_properties(node)
-            node_lookup[node] = {"category": category, "properties": props}
+                props = self.get_node_properties(node)
+                node_lookup[node] = {"category": category, "properties": props}
+            except Exception as e:
+                logger.error(f"Error generating node lookup for {node}: {e}")
+                continue
         return node_lookup
 
     def find_upstream_downstream(self, node_name: str) -> list:
@@ -127,25 +172,29 @@ class ResolveSchema:
         Returns:
         - list: A list of tuples representing upstream and downstream nodes.
         """
-        node_id, links = self.get_node_link(node_name)
+        try:
+            node_id, links = self.get_node_link(node_name)
 
-        # Ensure links is a list
-        if isinstance(links, dict):
-            links = [links]
+            # Ensure links is a list
+            if isinstance(links, dict):
+                links = [links]
 
-        results = []
+            results = []
 
-        for link in links:
-            target_type = link.get("target_type")
+            for link in links:
+                target_type = link.get("target_type")
 
-            if not node_id or not target_type:
-                print("Missing essential keys in link:", link)
-                results.append((None, None))
-                continue
+                if not node_id or not target_type:
+                    logger.warning(f"Missing essential keys in link: {link}")
+                    results.append((None, None))
+                    continue
 
-            results.append((target_type, node_id))
+                results.append((target_type, node_id))
 
-        return results
+            return results
+        except Exception as e:
+            logger.error(f"Error finding upstream/downstream for {node_name}: {e}")
+            raise
 
     def get_all_node_pairs(
         self,
@@ -168,9 +217,11 @@ class ResolveSchema:
         node_pairs = []
         for node in self.nodes:
             if node not in excluded_nodes:
-                node_pairs.extend(self.find_upstream_downstream(node))
-            else:
-                continue
+                try:
+                    node_pairs.extend(self.find_upstream_downstream(node))
+                except Exception as e:
+                    logger.error(f"Error retrieving node pairs for {node}: {e}")
+                    continue
         return node_pairs
 
     def get_node_order(self, edges: list) -> list:
@@ -183,34 +234,39 @@ class ResolveSchema:
         Returns:
         - list: A list of nodes in topological order.
         """
-        # Build graph representation
-        graph = defaultdict(list)
-        in_degree = defaultdict(int)
+        try:
+            # Build graph representation
+            graph = defaultdict(list)
+            in_degree = defaultdict(int)
 
-        for upstream, downstream in edges:
-            graph[upstream].append(downstream)
-            in_degree[downstream] += 1
-            if upstream not in in_degree:
-                in_degree[upstream] = 0
+            for upstream, downstream in edges:
+                graph[upstream].append(downstream)
+                in_degree[downstream] += 1
+                if upstream not in in_degree:
+                    in_degree[upstream] = 0
 
-        # Perform Topological Sorting (Kahn's Algorithm)
-        sorted_order = []
-        zero_in_degree = deque([node for node in in_degree if in_degree[node] == 0])
+            # Perform Topological Sorting (Kahn's Algorithm)
+            sorted_order = []
+            zero_in_degree = deque([node for node in in_degree if in_degree[node] == 0])
 
-        while zero_in_degree:
-            node = zero_in_degree.popleft()
-            sorted_order.append(node)
+            while zero_in_degree:
+                node = zero_in_degree.popleft()
+                sorted_order.append(node)
 
-            for neighbor in graph[node]:
-                in_degree[neighbor] -= 1
-                if in_degree[neighbor] == 0:
-                    zero_in_degree.append(neighbor)
+                for neighbor in graph[node]:
+                    in_degree[neighbor] -= 1
+                    if in_degree[neighbor] == 0:
+                        zero_in_degree.append(neighbor)
 
-        # Ensure core_metadata_collection is last
-        sorted_order.remove("core_metadata_collection")
-        sorted_order.append("core_metadata_collection")
+            # Ensure core_metadata_collection is last
+            if "core_metadata_collection" in sorted_order:
+                sorted_order.remove("core_metadata_collection")
+                sorted_order.append("core_metadata_collection")
 
-        return sorted_order
+            return sorted_order
+        except Exception as e:
+            logger.error(f"Error determining node order: {e}")
+            raise
 
     def split_json(self) -> list:
         """
@@ -219,10 +275,14 @@ class ResolveSchema:
         Returns:
         - list: A list of node schemas.
         """
-        schema_list = []
-        for node in self.nodes:
-            schema_list.append(self.schema[node])
-        return schema_list
+        try:
+            schema_list = []
+            for node in self.nodes:
+                schema_list.append(self.schema[node])
+            return schema_list
+        except Exception as e:
+            logger.error(f"Error splitting JSON schema: {e}")
+            raise
 
     def return_schema(self, target_id: str) -> dict:
         """
@@ -234,15 +294,19 @@ class ResolveSchema:
         Returns:
         - dict: The dictionary that matches the target_id, or None if not found.
         """
-        if target_id.endswith(".yaml"):
-            target_id = target_id[:-5]
+        try:
+            if target_id.endswith(".yaml"):
+                target_id = target_id[:-5]
 
-        result = next(
-            (item for item in self.schema_list if item.get("id") == target_id), None
-        )
-        if result is None:
-            print(f"{target_id} not found")
-        return result
+            result = next(
+                (item for item in self.schema_list if item.get("id") == target_id), None
+            )
+            if result is None:
+                logger.warning(f"{target_id} not found in schema list")
+            return result
+        except Exception as e:
+            logger.error(f"Error retrieving schema for {target_id}: {e}")
+            raise
 
     def resolve_references(self, schema: dict, reference: dict) -> dict:
         """
@@ -260,34 +324,41 @@ class ResolveSchema:
         ref_input_content = reference
 
         def resolve_node(node, manual_ref_content=ref_input_content):
-            if isinstance(node, dict):
-                if "$ref" in node:
-                    ref_path = node["$ref"]
-                    ref_file, ref_key = ref_path.split("#")
-                    ref_file = ref_file.strip()
-                    ref_key = ref_key.strip("/")
+            try:
+                if isinstance(node, dict):
+                    if "$ref" in node:
+                        ref_path = node["$ref"]
+                        ref_file, ref_key = ref_path.split("#")
+                        ref_file = ref_file.strip()
+                        ref_key = ref_key.strip("/")
 
-                    # if a reference file is in the reference, load the pre-defined reference, if no file exists, then use the schema itself as reference
-                    if ref_file:
-                        ref_content = manual_ref_content
+                        # if a reference file is in the reference, load the pre-defined reference, if no file exists, then use the schema itself as reference
+                        if ref_file:
+                            ref_content = manual_ref_content
+                        else:
+                            ref_content = schema
+
+                        for part in ref_key.split("/"):
+                            ref_content = ref_content[part]
+
+                        resolved_content = resolve_node(ref_content)
+                        # Merge resolved content with the current node, excluding the $ref key
+                        return {
+                            **resolved_content,
+                            **{k: resolve_node(v) for k, v in node.items() if k != "$ref"},
+                        }
                     else:
-                        ref_content = schema
-
-                    for part in ref_key.split("/"):
-                        ref_content = ref_content[part]
-
-                    resolved_content = resolve_node(ref_content)
-                    # Merge resolved content with the current node, excluding the $ref key
-                    return {
-                        **resolved_content,
-                        **{k: resolve_node(v) for k, v in node.items() if k != "$ref"},
-                    }
+                        return {k: resolve_node(v) for k, v in node.items()}
+                elif isinstance(node, list):
+                    return [resolve_node(item) for item in node]
                 else:
-                    return {k: resolve_node(v) for k, v in node.items()}
-            elif isinstance(node, list):
-                return [resolve_node(item) for item in node]
-            else:
-                return node
+                    return node
+            except KeyError as e:
+                logger.error(f"Missing key {e} while resolving references in node: {node}")
+                raise
+            except Exception as e:
+                logger.error(f"Error resolving references in node: {e}")
+                raise
 
         return resolve_node(schema)
 
@@ -302,12 +373,16 @@ class ResolveSchema:
         Returns:
         - dict: A dictionary with schema ids as keys and schema contents as values.
         """
-        schema_dict = {}
-        for schema in schema_list:
-            schema_id = schema.get("id")
-            if schema_id:
-                schema_dict[f"{schema_id}.yaml"] = schema
-        return schema_dict
+        try:
+            schema_dict = {}
+            for schema in schema_list:
+                schema_id = schema.get("id")
+                if schema_id:
+                    schema_dict[f"{schema_id}.yaml"] = schema
+            return schema_dict
+        except Exception as e:
+            logger.error(f"Error converting schema list to JSON: {e}")
+            raise
 
     def resolve_all_references(self) -> list:
         """
@@ -316,8 +391,7 @@ class ResolveSchema:
         Returns:
         - list: A list of resolved schema dictionaries.
         """
-
-        print("=== Resolving Schema References ===")
+        logger.info("=== Resolving Schema References ===")
 
         resolved_schema_list = []
         for node in self.nodes:
@@ -329,11 +403,11 @@ class ResolveSchema:
                     self.schema[node], self.schema_def_resolved
                 )
                 resolved_schema_list.append(resolved_schema)
-                print(f"Resolved {node}")
+                logger.info(f"Resolved {node}")
             except KeyError as e:
-                print(f"Error resolving {node}: Missing key {e}")
+                logger.error(f"Error resolving {node}: Missing key {e}")
             except Exception as e:
-                print(f"Error resolving {node}: {e}")
+                logger.error(f"Error resolving {node}: {e}")
 
         return resolved_schema_list
 
@@ -347,13 +421,17 @@ class ResolveSchema:
         Returns:
         - dict: The dictionary that matches the target_id, or None if not found.
         """
-        if target_id.endswith(".yaml"):
-            target_id = target_id[:-5]
+        try:
+            if target_id.endswith(".yaml"):
+                target_id = target_id[:-5]
 
-        result = next(
-            (item for item in self.schema_list_resolved if item.get("id") == target_id),
-            None,
-        )
-        if result is None:
-            print(f"{target_id} not found")
-        return result
+            result = next(
+                (item for item in self.schema_list_resolved if item.get("id") == target_id),
+                None,
+            )
+            if result is None:
+                logger.warning(f"{target_id} not found in resolved schema list")
+            return result
+        except Exception as e:
+            logger.error(f"Error retrieving resolved schema for {target_id}: {e}")
+            raise
