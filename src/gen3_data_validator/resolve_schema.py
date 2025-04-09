@@ -13,19 +13,30 @@ class ResolveSchema:
         - schema_path (str): The path to the JSON schema file.
         """
         self.schema_path = schema_path
+        logger.info(f"Initializing ResolveSchema with schema path: {schema_path}")
         try:
             self.schema = self.read_json(self.schema_path)
+            logger.info("Successfully read JSON schema.")
             self.nodes = self.get_nodes()
+            logger.info(f"Retrieved {len(self.nodes)} nodes from schema.")
             self.node_pairs = self.get_all_node_pairs()
+            logger.info(f"Retrieved {len(self.node_pairs)} node pairs.")
             self.node_order = self.get_node_order(edges=self.node_pairs)
+            logger.info("Determined node order based on dependencies.")
             self.schema_list = self.split_json()
+            logger.info("Split schema into individual node schemas.")
             self.schema_def = self.return_schema("_definitions.yaml")
+            logger.info("Retrieved definitions schema.")
             self.schema_term = self.return_schema("_terms.yaml")
+            logger.info("Retrieved terms schema.")
             self.schema_def_resolved = self.resolve_references(
                 self.schema_def, self.schema_term
             )
+            logger.info("Resolved references in definitions schema.")
             self.schema_list_resolved = self.resolve_all_references()
+            logger.info("Resolved all references in schema list.")
             self.schema_resolved = self.schema_list_to_json(self.schema_list_resolved)
+            logger.info("Converted resolved schema list to JSON format.")
         except Exception as e:
             logger.error(f"Failed to initialize ResolveSchema: {e}")
             raise
@@ -40,6 +51,7 @@ class ResolveSchema:
         Returns:
         - dict: The contents of the JSON file.
         """
+        logger.info(f"Reading JSON file from path: {path}")
         try:
             with open(path) as f:
                 return json.load(f)
@@ -60,6 +72,7 @@ class ResolveSchema:
         Returns:
         - list: A list of node names.
         """
+        logger.info("Retrieving node names from schema.")
         try:
             nodes = list(self.schema.keys())
             return nodes
@@ -77,6 +90,7 @@ class ResolveSchema:
         Returns:
         - tuple: A tuple containing the node ID and its links.
         """
+        logger.info(f"Retrieving links and ID for node: {node_name}")
         try:
             links = self.schema[node_name]["links"]
             node_id = self.schema[node_name]["id"]
@@ -101,6 +115,7 @@ class ResolveSchema:
         Returns:
         - tuple: A tuple containing the node ID and its category, or None if the node is excluded.
         """
+        logger.info(f"Retrieving category and ID for node: {node_name}")
         try:
             category = self.schema[node_name]["category"]
             node_id = self.schema[node_name]["id"]
@@ -122,6 +137,7 @@ class ResolveSchema:
         Returns:
         - tuple: A tuple containing the node ID and its properties.
         """
+        logger.info(f"Retrieving properties for node: {node_name}")
         try:
             properties = {
                 k: v for k, v in self.schema[node_name]["properties"].items()
@@ -138,6 +154,7 @@ class ResolveSchema:
             raise
 
     def generate_node_lookup(self) -> dict:
+        logger.info("Generating node lookup dictionary.")
         node_lookup = {}
         excluded_nodes = [
             "_definitions.yaml",
@@ -172,6 +189,7 @@ class ResolveSchema:
         Returns:
         - list: A list of tuples representing upstream and downstream nodes.
         """
+        logger.info(f"Finding upstream and downstream nodes for: {node_name}")
         try:
             node_id, links = self.get_node_link(node_name)
 
@@ -214,6 +232,7 @@ class ResolveSchema:
         Returns:
         - list: A list of node pairs.
         """
+        logger.info("Retrieving all node pairs, excluding specified nodes.")
         node_pairs = []
         for node in self.nodes:
             if node not in excluded_nodes:
@@ -234,6 +253,7 @@ class ResolveSchema:
         Returns:
         - list: A list of nodes in topological order.
         """
+        logger.info("Determining node order based on dependencies.")
         try:
             # Build graph representation
             graph = defaultdict(list)
@@ -275,6 +295,7 @@ class ResolveSchema:
         Returns:
         - list: A list of node schemas.
         """
+        logger.info("Splitting schema into individual node schemas.")
         try:
             schema_list = []
             for node in self.nodes:
@@ -294,6 +315,7 @@ class ResolveSchema:
         Returns:
         - dict: The dictionary that matches the target_id, or None if not found.
         """
+        logger.info(f"Retrieving schema for target ID: {target_id}")
         try:
             if target_id.endswith(".yaml"):
                 target_id = target_id[:-5]
@@ -321,6 +343,7 @@ class ResolveSchema:
         Returns:
         - dict: The resolved JSON node with references resolved.
         """
+        logger.info("Resolving references in schema.")
         ref_input_content = reference
 
         def resolve_node(node, manual_ref_content=ref_input_content):
@@ -373,6 +396,7 @@ class ResolveSchema:
         Returns:
         - dict: A dictionary with schema ids as keys and schema contents as values.
         """
+        logger.info("Converting schema list to JSON format.")
         try:
             schema_dict = {}
             for schema in schema_list:
@@ -391,6 +415,7 @@ class ResolveSchema:
         Returns:
         - list: A list of resolved schema dictionaries.
         """
+        logger.info("Resolving all references in schema list.")
         logger.info("=== Resolving Schema References ===")
 
         resolved_schema_list = []
@@ -421,6 +446,7 @@ class ResolveSchema:
         Returns:
         - dict: The dictionary that matches the target_id, or None if not found.
         """
+        logger.info(f"Retrieving resolved schema for target ID: {target_id}")
         try:
             if target_id.endswith(".yaml"):
                 target_id = target_id[:-5]
