@@ -36,7 +36,7 @@ class Validate:
             errors = list(validator.iter_errors(obj))
             logger.debug(f"Object at index {idx} validated with {len(errors)} errors.")
         except Exception as e:
-            logger.error(f"Error during object validation at index {idx}: {e}")
+            logger.error(f"Error in validate_object during object validation at index {idx}: {e}")
             return validation_results
 
         if len(errors[1:]) == 0:
@@ -89,7 +89,7 @@ class Validate:
             schema_keys = [key[:-5] if key.endswith('.yaml') else key for key in resolved_schema.keys()]
             logger.info(f"Schema keys: {schema_keys}")
         except Exception as e:
-            logger.error(f"Error accessing data or schema keys: {e}")
+            logger.error(f"Error in validate_schema accessing data or schema keys: {e}")
             return validation_results
         
         for node in data_nodes:
@@ -103,7 +103,7 @@ class Validate:
                 validator = Draft4Validator(schema)
                 logger.info(f"Validator set up for node {node}.")
             except Exception as e:
-                logger.error(f"Error setting up validator for node {node}: {e}")
+                logger.error(f"Error in validate_schema setting up validator for node {node}: {e}")
                 continue
 
             node_results = []
@@ -113,7 +113,7 @@ class Validate:
                     result = {"index_" + str(idx): result}
                     node_results.append(result)
                 except Exception as e:
-                    logger.error(f"Error validating object at index {idx} for node {node}: {e}")
+                    logger.error(f"Error in validate_schema validating object at index {idx} for node {node}: {e}")
                 
             validation_results[node] = node_results
         
@@ -131,7 +131,7 @@ class Validate:
             logger.info(f"Entities listed: {entities}")
             return entities
         except Exception as e:
-            logger.error(f"Error listing entities: {e}")
+            logger.error(f"Error in list_entities: {e}")
             return []
     
     def list_index_by_entity(self, entity: str) -> list:
@@ -146,11 +146,11 @@ class Validate:
         """
         index_list = []
         try:
+            logger.info(f"Generating list of indexes for {entity}")
             for obj in self.validation_result[entity]:
                 index_list.append(list(obj.keys())[0])
-            logger.info(f"Index keys for entity {entity}: {index_list}")
         except Exception as e:
-            logger.error(f"Error listing index by entity {entity}: {e}")
+            logger.error(f"Error in list_index_by_entity for entity {entity}: {e}")
         return index_list
     
     def make_keymap(self) -> dict:
@@ -168,7 +168,7 @@ class Validate:
             logger.info(f"Keymap created: {key_map}")
             return key_map
         except Exception as e:
-            logger.error(f"Error making keymap: {e}")
+            logger.error(f"Error in make_keymap: {e}")
             return {}
         
     def pull_entity(self, entity: str, result_type: str = "FAIL") -> list:
@@ -180,10 +180,14 @@ class Validate:
             result_type (str, optional): The type of validation result to return. Either ["PASS", "FAIL", "ALL"]
 
         Returns:
-            list: A list of validation results for the specified entity.
+            list: A list of validation results for the specified entity, or None if no results are found.
         """
         return_objects = []
         try:
+            if len(self.validation_result.get(entity, [])) == 0:
+                logger.info(f"No validation results found for entity {entity}.")
+                return None
+
             for obj in self.validation_result[entity]:
                 obj_values = list(obj.values())
                 val_result = obj_values[0][0]["validation_result"]
@@ -196,7 +200,7 @@ class Validate:
                     return_objects.append(obj)
             logger.info(f"Pulled {result_type} results for entity {entity}: {len(return_objects)} results found.")
         except Exception as e:
-            logger.error(f"Error pulling entity {entity}: {e}")
+            logger.error(f"Error in pull_entity for entity {entity}: {e}")
 
         return return_objects
 
@@ -230,7 +234,7 @@ class Validate:
             
             return return_list
         except Exception as e:
-            logger.error(f"Error pulling index of entity {entity} at index {index_key}: {e}")
+            logger.error(f"Error in pull_index_of_entity for entity {entity} at index {index_key}: {e}")
             return []
     
 
@@ -258,7 +262,7 @@ class ValidateStats(Validate):
             logger.info(f"Number of rows with errors for entity {entity}: {n_rows}")
             return n_rows
         except Exception as e:
-            logger.error(f"Error counting rows with errors for entity {entity}: {e}")
+            logger.error(f"Error in n_rows_with_errors for entity {entity}: {e}")
             return 0
     
     def count_results_by_index(self, entity: str, index_key: str, result_type: str = "FAIL", print_results: bool = False):
@@ -278,10 +282,11 @@ class ValidateStats(Validate):
             int: The number of validation results for the specified key/index.
         """
         validation_count = 0
+        val_result = None
         try:
             index_data = self.pull_index_of_entity(entity = entity, index_key = index_key, result_type = result_type)
             for obj in index_data:
-                val_result = obj["validation_result"]
+                val_result = obj.get("validation_result", None)
                 if result_type == "ALL":
                     validation_count += 1
                     continue
@@ -292,7 +297,7 @@ class ValidateStats(Validate):
             if print_results:
                 print(f"Number of {result_type} validations for {entity} at {index_key}': {validation_count}")
         except Exception as e:
-            logger.error(f"Error counting results by index for entity {entity} at index {index_key}: {e}")
+            logger.error(f"Error in count_results_by_index for entity {entity} at index {index_key}: {e}")
         return validation_count
 
 
@@ -322,7 +327,7 @@ class ValidateStats(Validate):
             if print_results:
                 logger.info(f"Number of total {result_type} validations for '{entity}': {validation_count}")
         except Exception as e:
-            logger.error(f"Error counting results by entity {entity}: {e}")
+            logger.error(f"Error in count_results_by_entity for entity {entity}: {e}")
         return validation_count
     
     def n_errors_per_entity(self, entity: str) -> int:
@@ -340,7 +345,7 @@ class ValidateStats(Validate):
             logger.info(f"Number of errors per entity {entity}: {n_errors}")
             return n_errors
         except Exception as e:
-            logger.error(f"Error counting errors per entity {entity}: {e}")
+            logger.error(f"Error in n_errors_per_entity for entity {entity}: {e}")
             return 0
     
     
@@ -360,7 +365,7 @@ class ValidateStats(Validate):
             logger.info(f"Number of errors per entry for entity {entity} at index {index_key}: {n_errors}")
             return n_errors
         except Exception as e:
-            logger.error(f"Error counting errors per entry for entity {entity} at index {index_key}: {e}")
+            logger.error(f"Error in n_errors_per_entry for entity {entity} at index {index_key}: {e}")
             return 0
     
     def total_validation_errors(self) -> int:
@@ -377,7 +382,7 @@ class ValidateStats(Validate):
             logger.info(f"Total validation errors: {error_count}")
             print(f"Total validation errors: {error_count}")
         except Exception as e:
-            logger.error(f"Error calculating total validation errors: {e}")
+            logger.error(f"Error in total_validation_errors: {e}")
         return error_count
     
     
@@ -415,7 +420,7 @@ class ValidateStats(Validate):
             logger.info("Summary statistics generated.")
             return summary_df
         except Exception as e:
-            logger.error(f"Error generating summary statistics: {e}")
+            logger.error(f"Error in summary_stats: {e}")
             return pd.DataFrame()
     
 
@@ -464,7 +469,7 @@ class ValidateSummary(Validate):
             logger.info(f"Flattened '{result_type}' validation results: {len(flattened_results)}")
             return flattened_results
         except Exception as e:
-            logger.error(f"Error flattening validation results: {e}")
+            logger.error(f"Error in flatten_validation_results: {e}")
             return {}
     
     def flattened_results_to_pd(self) -> pd.DataFrame:
@@ -486,7 +491,7 @@ class ValidateSummary(Validate):
             pd_df.reset_index(drop=True, inplace=True)
             return pd_df
         except Exception as e:
-            logger.error(f"Error converting flattened results to DataFrame: {e}")
+            logger.error(f"Error in flattened_results_to_pd: {e}")
             return pd.DataFrame()
     
     def collapse_flatten_results_to_pd(self) -> pd.DataFrame:
@@ -512,5 +517,5 @@ class ValidateSummary(Validate):
             collapsed_df = collapsed_df.sort_values(by=['entity', 'validation_error', 'count']).reset_index(drop=True)
             return collapsed_df
         except Exception as e:
-            logger.error(f"Error collapsing flattened results to DataFrame: {e}")
+            logger.error(f"Error in collapse_flatten_results_to_pd: {e}")
             return pd.DataFrame()
