@@ -17,6 +17,7 @@ class Validate:
         self.resolved_schema = resolved_schema
         logger.info("Initializing Validate class with data map and resolved schema.")
         self.validation_result = self.validate_schema(self.data_map, self.resolved_schema)
+        self.key_map = self.make_keymap()
     
     
     def validate_object(self, obj, idx, validator) -> list:
@@ -165,7 +166,7 @@ class Validate:
             key_map = {}
             for entity in entities:
                 key_map[entity] = self.list_index_by_entity(entity)
-            logger.info(f"Keymap created: {key_map}")
+            logger.info("Keymap created")
             return key_map
         except Exception as e:
             logger.error(f"Error in make_keymap: {e}")
@@ -467,6 +468,8 @@ class ValidateSummary(Validate):
             
             self.flattened_validation_results = flattened_results
             logger.info(f"Flattened '{result_type}' validation results: {len(flattened_results)}")
+            if len(flattened_results) == 0:
+                print('No validation results to flatten')
             return flattened_results
         except Exception as e:
             logger.error(f"Error in flatten_validation_results: {e}")
@@ -486,6 +489,10 @@ class ValidateSummary(Validate):
         """
         try:
             logger.info("Converting flattened results to pandas dataframe...")
+            if not self.flattened_validation_results:
+                logger.info("No flattened validation results found, returning empty DataFrame.")
+                print("No validation errors found")
+                return pd.DataFrame()
             pd_df = pd.json_normalize(self.flattened_validation_results)
             pd_df.sort_values(by=['entity', 'row'], inplace=True)
             pd_df.reset_index(drop=True, inplace=True)
@@ -508,6 +515,10 @@ class ValidateSummary(Validate):
         """
         try:
             logger.info("Collapsing flattened results to pandas dataframe...")
+            if not self.flattened_validation_results:
+                logger.info("No flattened validation results found, returning empty DataFrame.")
+                print("No validation errors found")
+                return pd.DataFrame()
             pd_df = pd.json_normalize(self.flattened_validation_results)
             collapsed_df = pd_df.groupby('validation_error').agg({
                 'entity': 'first',
