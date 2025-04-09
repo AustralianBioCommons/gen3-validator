@@ -37,6 +37,8 @@ class ResolveSchema:
             logger.info("Resolved all references in schema list.")
             self.schema_resolved = self.schema_list_to_json(self.schema_list_resolved)
             logger.info("Converted resolved schema list to JSON format.")
+            self.schema_version = self.get_schema_version(self.schema)
+            logger.info(f"Obtained schema version: {self.schema_version}")
         except Exception as e:
             logger.error(f"Failed to initialize ResolveSchema: {e}")
             raise
@@ -460,4 +462,21 @@ class ResolveSchema:
             return result
         except Exception as e:
             logger.error(f"Error retrieving resolved schema for {target_id}: {e}")
+            raise
+
+    def get_schema_version(self, schema: dict) -> str:
+        """
+        Extracts the version of the schema from the provided schema dictionary.
+
+        Parameters:
+        - schema (dict): The schema dictionary from which to extract the version.
+
+        Returns:
+        - str: The version of the schema.
+        """
+        try:
+            version = schema['_settings.yaml']['_dict_version']
+            return version
+        except Exception as e:
+            logger.error(f"Could not pull schema version {e}")
             raise
