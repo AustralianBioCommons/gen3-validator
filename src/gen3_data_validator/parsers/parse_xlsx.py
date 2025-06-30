@@ -91,21 +91,17 @@ class ParseXlsxMetadata:
         fk = first_two_columns[1]
         logger.debug(f"Extracted PK: {pk} and FK: {fk} from sheet: {sheet_name}")
         return pk, fk
-
-    def pd_to_json(self, xlsx_data_dict: dict, sheet_name: str, json_path: str) -> None:
-        """
-        Converts a specified sheet from the metadata dictionary to a JSON file.
-        Also formats and renames the primary and foreign keys into a gen3 compatible
-        format.
+    
+    def format_pd_to_json(self, xlsx_data_dict: dict, sheet_name: str) -> list:
+        """formats the pandas data frame into a specific json format
 
         Args:
             xlsx_data_dict (dict): A dictionary where each key is a sheet name and each
             value is a DataFrame.
             sheet_name (str): The name of the sheet to convert to JSON.
-            json_path (str): The path to the JSON file to be saved.
 
         Returns:
-            None
+            list: list of json objects with specific key pair structure
         """
         try:
             pk, fk = self.get_pk_fk_pairs(xlsx_data_dict, sheet_name)
@@ -126,7 +122,27 @@ class ParseXlsxMetadata:
             # removing _uid columns
             df_cleaned = df_cleaned.loc[:, ~df_cleaned.columns.str.endswith('_uid')]
             data_list = df_cleaned.to_dict(orient='records')  # converting to dict
+            return data_list
+        except Exception as e:
+            logger.error(f"Failed to convert sheet {sheet_name} to JSON: {e}")
+            raise
+        
 
+    def pd_to_json(self, xlsx_data_dict: dict, sheet_name: str, json_path: str) -> None:
+        """
+        Writes a list of json objects to a json file
+
+        Args:
+            xlsx_data_dict (dict): A dictionary where each key is a sheet name and each
+            value is a DataFrame.
+            sheet_name (str): The name of the sheet to convert to JSON.
+            json_path (str): The path to the JSON file to be saved.
+
+        Returns:
+            None
+        """
+        try:
+            data_list = self.format_pd_to_json(xlsx_data_dict, sheet_name)
             with open(json_path, 'w') as f:
                 json.dump(data_list, f)
             logger.info(f"Sheet {sheet_name} converted to JSON and saved to {json_path}.")
