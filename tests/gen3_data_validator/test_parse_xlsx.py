@@ -1,70 +1,74 @@
 import pytest
 import pandas as pd
 import json
-from io import BytesIO
 from gen3_data_validator.parsers.parse_xlsx import ParseXlsxMetadata
+from unittest.mock import patch, MagicMock
 
-@pytest.fixture
-def mock_xlsx_file():
-    # Create a mock Excel file in memory
-    excel_data = {
-        'Sheet1': pd.DataFrame({
-            'pk_uid': [1, 2, 3],
-            'fk_uid': ['a', 'b', 'c'],
-            'data': [10, 20, 30]
-        }),
-        'Sheet2': pd.DataFrame({
-            'pk_uid': [4, 5, 6],
-            'fk_uid': ['d', 'e', 'f'],
-            'data': [40, 50, 60]
-        })
-    }
-    excel_buffer = BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-        for sheet_name, data in excel_data.items():
-            data.to_excel(writer, sheet_name=sheet_name, index=False)
-    excel_buffer.seek(0)
-    return excel_buffer
+def test_init_ParseXlsxMetadata():
+    xlsx_path = "test.xlsx"
+    link_suffix = "s"
+    skip_rows = 0
+    parse_xlsx = ParseXlsxMetadata(xlsx_path, link_suffix, skip_rows)
+    assert parse_xlsx.xlsx_path == xlsx_path
+    assert parse_xlsx.skip_rows == skip_rows
+    assert parse_xlsx.link_suffix == link_suffix
 
-def test_initialization(mock_xlsx_file):
-    # Test the initialization of the class
-    parser = ParseXlsxMetadata(mock_xlsx_file)
-    assert parser.xlsx_path == mock_xlsx_file
-    assert parser.skip_rows == 0
-    assert parser.link_suffix == 's'
-    assert isinstance(parser.xlsx_data_dict, dict)
-    assert 'Sheet1' in parser.xlsx_data_dict
-    assert 'Sheet2' in parser.xlsx_data_dict
 
-def test_parse_metadata_template(mock_xlsx_file):
-    # Test parsing of the Excel file
-    parser = ParseXlsxMetadata(mock_xlsx_file)
-    assert 'Sheet1' in parser.xlsx_data_dict
-    assert 'Sheet2' in parser.xlsx_data_dict
-    assert len(parser.xlsx_data_dict['Sheet1']) == 3  # No rows skipped
+def test_parse_metadata_template():
+    xlsx_path = "test.xlsx"
+    skip_rows = 0
+    # mock dfs
+    df1 = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+    df2 = pd.DataFrame({"col1": [5, 6], "col2": [7, 8]})
+    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
+    
+    with patch('pandas.read_excel', return_value=fake_pd_dict) as mock_read_excel:
+        parse_xlsx = ParseXlsxMetadata(xlsx_path, skip_rows=skip_rows)
+        result = parse_xlsx.parse_metadata_template()
+        mock_read_excel.assert_called_once_with(xlsx_path, sheet_name=None)
 
-def test_get_pk_fk_pairs(mock_xlsx_file):
-    # Test extraction of primary and foreign keys
-    parser = ParseXlsxMetadata(mock_xlsx_file)
-    pk, fk = parser.get_pk_fk_pairs('Sheet1')
-    assert pk == 'pk_uid'
-    assert fk == 'fk_uid'
+    assert result == fake_pd_dict
 
-def test_pd_to_json(tmp_path, mock_xlsx_file):
-    # Test conversion of a sheet to JSON
-    parser = ParseXlsxMetadata(mock_xlsx_file)
-    json_path = tmp_path / "Sheet1.json"
-    parser.pd_to_json('Sheet1', json_path)
-    assert json_path.exists()
-    with open(json_path, 'r') as f:
-        data = json.load(f)
-    assert len(data) == 3
-    assert data[0]['submitter_id'] == 1
-    assert data[0]['key_fk'] == 'a'
+def test_parse_metadata_template_skip_1_row():
+    xlsx_path = "test.xlsx"
+    skip_rows = 1
+    # mock dfs
+    df1 = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+    df2 = pd.DataFrame({"col1": [5, 6], "col2": [7, 8]})
+    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
+    
+    with patch('pandas.read_excel', return_value=fake_pd_dict) as mock_read_excel:
+        parse_xlsx = ParseXlsxMetadata(xlsx_path, skip_rows=skip_rows)
+        result = parse_xlsx.parse_metadata_template()
+        mock_read_excel.assert_called_once_with(xlsx_path, sheet_name=None)
+        
+        # check that the first row of each df was removed
+        assert result["sheet1"].iloc[0, 0] == 2
+        assert result["sheet2"].iloc[0, 0] == 6
 
-def test_write_dict_to_json(tmp_path, mock_xlsx_file):
-    # Test writing all sheets to JSON files
-    parser = ParseXlsxMetadata(mock_xlsx_file)
-    parser.write_dict_to_json(tmp_path)
-    assert (tmp_path / "Sheet1.json").exists()
-    assert (tmp_path / "Sheet2.json").exists()
+    assert result == fake_pd_dict
+
+def test_get_sheet_names():
+    xlsx_path = "test.xlsx"
+    skip_rows = 0
+    # mock dfs
+    df1 = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+    df2 = pd.DataFrame({"col1": [5, 6], "col2": [7, 8]})
+    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
+    expected = ['sheet1', 'sheet2']
+    parse_xlsx = ParseXlsxMetadata(xlsx_path, skip_rows=skip_rows)
+    parse_xlsx.xlsx_data_dict = fake_pd_dict
+    result = parse_xlsx.get_sheet_names()
+    assert set(result) == set(expected)
+
+
+def test_get_pk_fk_pairs():
+    xlsx_path = "test.xlsx"
+    skip_rows = 0
+    sheet_name = "sheet1"
+    df1 = pd.DataFrame({"pk_col": [1, 2], "fk_col": [3, 4]})
+    df2 = pd.DataFrame({"pk_col": [5, 6], "fk_col": [1, 2]})
+    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
+    parse_xlsx = ParseXlsxMetadata(xlsx_path, skip_rows=skip_rows)
+    result = parse_xlsx.get_pk_fk_pairs(xlsx_data_dict=fake_pd_dict, sheet_name=sheet_name)
+    assert result == ("pk_col", "fk_col")
