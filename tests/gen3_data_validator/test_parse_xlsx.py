@@ -63,3 +63,39 @@ def test_get_sheet_names(ParseXlsx, fake_pd_dict):
 def test_get_pk_fk_pairs(ParseXlsx, fake_pd_dict):
     result = ParseXlsx.get_pk_fk_pairs(xlsx_data_dict=fake_pd_dict, sheet_name="sheet1")
     assert result == ("pk_col", "fk_col")
+
+
+def test_format_pd_to_json(ParseXlsx):
+    data = pd.DataFrame({
+        "lipidomics_assay_uid": ["lipidomics-assay-example-01-004-990910001"],
+        "sample_uid": ["sample-example-0000101"],
+        "assay_id": ["AD01_012#01-004-990910001"],
+        "assay_description": ["Targeted mass spec lipidome"],
+        "instrument_type": ["Agilent QQQ LC-MS"],
+        "type": ["lipidomics_assay"],
+        "samples": [{"submitter_id": "sample-example-0000101"}],
+        "submitter_id": ["lipidomics-assay-example-01-004-990910001"]
+    })
+    
+    fake_pd_dict = {"lipidomics_assay": data}
+    
+    expected = [
+        {
+            "assay_id": "AD01_012#01-004-990910001",
+            "assay_description": "Targeted mass spec lipidome",
+            "instrument_type": "Agilent QQQ LC-MS",
+            "type": "lipidomics_assay",
+            "key_fk": "sample-example-0000101",
+            "key_pk": "lipidomics-assay-example-01-004-990910001",
+            "samples": {
+                "submitter_id": "sample-example-0000101"
+            },
+            "submitter_id": "lipidomics-assay-example-01-004-990910001"
+        }
+    ]
+
+    result = ParseXlsx.format_pd_to_json(fake_pd_dict, 'lipidomics_assay')
+    assert result == expected
+
+
+
