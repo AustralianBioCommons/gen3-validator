@@ -22,30 +22,27 @@ def ParseXlsx_skip1row(xlsx_path):
     return ParseXlsxMetadata(xlsx_path, skip_rows=1)
 
 
+@pytest.fixture
+def fake_pd_dict():
+    df1 = pd.DataFrame({"pk_col": [1, 2], "fk_col": [3, 4]})
+    df2 = pd.DataFrame({"pk_col": [5, 6], "fk_col": [1, 2]})
+    return {"sheet1": df1, "sheet2": df2}
+
+
 def test_init_ParseXlsxMetadata(ParseXlsx, xlsx_path, skip_rows):
     assert ParseXlsx.xlsx_path == xlsx_path
     assert ParseXlsx.skip_rows == skip_rows
     assert ParseXlsx.link_suffix == 's'
 
 
-def test_parse_metadata_template(ParseXlsx, xlsx_path):
-    # mock dfs
-    df1 = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
-    df2 = pd.DataFrame({"col1": [5, 6], "col2": [7, 8]})
-    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
-    
+def test_parse_metadata_template(ParseXlsx, xlsx_path, fake_pd_dict):
     with patch('pandas.read_excel', return_value=fake_pd_dict) as mock_read_excel:
         result = ParseXlsx.parse_metadata_template()
         mock_read_excel.assert_called_once_with(xlsx_path, sheet_name=None)
 
     assert result == fake_pd_dict
 
-def test_parse_metadata_template_skip_1_row(ParseXlsx_skip1row, xlsx_path):
-    # mock dfs
-    df1 = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
-    df2 = pd.DataFrame({"col1": [5, 6], "col2": [7, 8]})
-    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
-    
+def test_parse_metadata_template_skip_1_row(ParseXlsx_skip1row, xlsx_path, fake_pd_dict):
     with patch('pandas.read_excel', return_value=fake_pd_dict) as mock_read_excel:
         result = ParseXlsx_skip1row.parse_metadata_template()
         mock_read_excel.assert_called_once_with(xlsx_path, sheet_name=None)
@@ -55,11 +52,7 @@ def test_parse_metadata_template_skip_1_row(ParseXlsx_skip1row, xlsx_path):
 
     assert result == fake_pd_dict
 
-def test_get_sheet_names(ParseXlsx):
-    # mock dfs
-    df1 = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
-    df2 = pd.DataFrame({"col1": [5, 6], "col2": [7, 8]})
-    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
+def test_get_sheet_names(ParseXlsx, fake_pd_dict):
     expected = ['sheet1', 'sheet2']
 
     ParseXlsx.xlsx_data_dict = fake_pd_dict
@@ -67,10 +60,6 @@ def test_get_sheet_names(ParseXlsx):
     assert set(result) == set(expected)
 
 
-def test_get_pk_fk_pairs(ParseXlsx):
-    df1 = pd.DataFrame({"pk_col": [1, 2], "fk_col": [3, 4]})
-    df2 = pd.DataFrame({"pk_col": [5, 6], "fk_col": [1, 2]})
-    fake_pd_dict = {"sheet1": df1, "sheet2": df2}
-    
+def test_get_pk_fk_pairs(ParseXlsx, fake_pd_dict):
     result = ParseXlsx.get_pk_fk_pairs(xlsx_data_dict=fake_pd_dict, sheet_name="sheet1")
     assert result == ("pk_col", "fk_col")
