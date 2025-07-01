@@ -14,34 +14,17 @@ class ResolveSchema:
         """
         self.schema_path = schema_path
         logger.info(f"Initializing ResolveSchema with schema path: {schema_path}")
-        try:
-            self.schema = self.read_json(self.schema_path)
-            logger.info("Successfully read JSON schema.")
-            self.nodes = self.get_nodes()
-            logger.info(f"Retrieved {len(self.nodes)} nodes from schema.")
-            self.node_pairs = self.get_all_node_pairs()
-            logger.info(f"Retrieved {len(self.node_pairs)} node pairs.")
-            self.node_order = self.get_node_order(edges=self.node_pairs)
-            logger.info("Determined node order based on dependencies.")
-            self.schema_list = self.split_json()
-            logger.info("Split schema into individual node schemas.")
-            self.schema_def = self.return_schema("_definitions.yaml")
-            logger.info("Retrieved definitions schema.")
-            self.schema_term = self.return_schema("_terms.yaml")
-            logger.info("Retrieved terms schema.")
-            self.schema_def_resolved = self.resolve_references(
-                self.schema_def, self.schema_term
-            )
-            logger.info("Resolved references in definitions schema.")
-            self.schema_list_resolved = self.resolve_all_references()
-            logger.info("Resolved all references in schema list.")
-            self.schema_resolved = self.schema_list_to_json(self.schema_list_resolved)
-            logger.info("Converted resolved schema list to JSON format.")
-            self.schema_version = self.get_schema_version(self.schema)
-            logger.info(f"Obtained schema version: {self.schema_version}")
-        except Exception as e:
-            logger.error(f"Failed to initialize ResolveSchema: {e}")
-            raise
+        self.schema = None
+        self.nodes = None
+        self.node_pairs = None
+        self.node_order = None
+        self.schema_list = None
+        self.schema_def = None
+        self.schema_term = None
+        self.schema_def_resolved = None
+        self.schema_list_resolved = None
+        self.schema_resolved = None
+        self.schema_version = None
 
     def read_json(self, path: str) -> dict:
         """
@@ -480,3 +463,52 @@ class ResolveSchema:
         except Exception as e:
             logger.error(f"Could not pull schema version {e}")
             raise
+
+    def resolve_schema(self):
+        """
+        Resolves and initializes all schema-related attributes for the instance.
+        This method reads the schema, extracts nodes and their relationships,
+        splits and resolves references, and sets the schema version.
+        """
+        logger.info("Starting schema resolution process.")
+        # Step 1: Read the main schema JSON
+        self.schema = self.read_json(self.schema_path)
+        logger.info("Successfully read JSON schema.")
+
+        # Step 2: Extract node information
+        self.nodes = self.get_nodes()
+        logger.info(f"Retrieved {len(self.nodes)} nodes from schema.")
+
+        # Step 3: Get node pairs and order
+        self.node_pairs = self.get_all_node_pairs()
+        logger.info(f"Retrieved {len(self.node_pairs)} node pairs.")
+        self.node_order = self.get_node_order(edges=self.node_pairs)
+        logger.info("Determined node order based on dependencies.")
+
+        # Step 4: Split schema into individual node schemas
+        self.schema_list = self.split_json()
+        logger.info("Split schema into individual node schemas.")
+
+        # Step 5: Retrieve definitions and terms schemas
+        self.schema_def = self.return_schema("_definitions.yaml")
+        logger.info("Retrieved definitions schema.")
+        self.schema_term = self.return_schema("_terms.yaml")
+        logger.info("Retrieved terms schema.")
+
+        # Step 6: Resolve references in definitions
+        self.schema_def_resolved = self.resolve_references(
+            self.schema_def, self.schema_term
+        )
+        logger.info("Resolved references in definitions schema.")
+
+        # Step 7: Resolve all references in schema list
+        self.schema_list_resolved = self.resolve_all_references()
+        logger.info("Resolved all references in schema list.")
+
+        # Step 8: Convert resolved schema list to JSON format
+        self.schema_resolved = self.schema_list_to_json(self.schema_list_resolved)
+        logger.info("Converted resolved schema list to JSON format.")
+
+        # Step 9: Get schema version
+        self.schema_version = self.get_schema_version(self.schema)
+        logger.info(f"Obtained schema version: {self.schema_version}")
