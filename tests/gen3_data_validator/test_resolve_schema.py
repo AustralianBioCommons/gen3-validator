@@ -538,7 +538,7 @@ def test_get_schema_version(ResolveSchema_instance):
         assert "Could not pull schema version" in str(e) or isinstance(e, KeyError)
 
 
-        # INSERT_YOUR_CODE
+
 def test_resolve_schema(monkeypatch, ResolveSchema_instance):
     # Prepare a mock schema dict with all required keys
     schema = {
