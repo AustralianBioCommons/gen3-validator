@@ -11,23 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Validate:
-    """
-    The Validate class provides methods to validate data objects against a resolved JSON schema.
-    It initializes with a data map and a resolved schema, performs schema validation, and constructs
-    a key map for further processing. The class includes methods for validating individual objects
-    and handling validation results, leveraging the jsonschema Draft4Validator for compliance checks.
-
-    Attributes:
-        data_map (dict): The mapping of data to be validated.
-        resolved_schema (dict): The resolved JSON schema to validate against.
-        validation_result (list): The results of validating the data map against the schema.
-        key_map (dict): A mapping of keys for further data processing.
-
-    Methods:
-        validate_object(obj, idx, validator): Validates a single object and returns validation results.
-        validate_schema(data_map, resolved_schema): Validates the entire data map against the schema.
-        make_keymap(): Constructs a key mapping from the data map.
-    """
+    
     def __init__(self, data_map, resolved_schema):
         self.data_map = data_map
         self.resolved_schema = resolved_schema
