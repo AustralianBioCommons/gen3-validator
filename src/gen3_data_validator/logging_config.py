@@ -1,15 +1,13 @@
 import logging
+from datetime import datetime
 
 
-def configure_logging():
+def setup_logging():
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        filename='logs/app.log',
-        filemode='x'
+        filename=f"../logs/{datetime.now()}.log",
+        filemode='x',
+        force=True  # Ensures custom configuration takes effect
     )
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-    console_handler.setFormatter(console_formatter)
-    logging.getLogger('').addHandler(console_handler)
+    logging.info("This log should appear in logs.log")
