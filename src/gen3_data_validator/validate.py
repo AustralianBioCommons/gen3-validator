@@ -36,11 +36,17 @@ class Validate:
             Generates a mapping of keys from the data_map for reference and lookup.
     """
     def __init__(self, data_map, resolved_schema):
+        if data_map is None:
+            logger.error("Provided data_map is None.")
+            raise ValueError("data_map cannot be None.")
+        if resolved_schema is None:
+            logger.error("Provided resolved_schema is None.")
+            raise ValueError("resolved_schema cannot be None.")
         self.data_map = data_map
         self.resolved_schema = resolved_schema
-        logger.info("Initializing Validate class with data map and resolved schema.")
-        self.validation_result = self.validate_schema(self.data_map, self.resolved_schema)
-        self.key_map = self.make_keymap()
+        self.validation_result = None
+        self.key_map = None
+        logger.info("Validate class initialised.")
     
     
     def validate_object(self, obj, idx, validator) -> list:
@@ -92,38 +98,33 @@ class Validate:
 
         return validation_results
 
-    def validate_schema(self, data_map: dict, resolved_schema: dict) -> dict:
+    def validate_schema(self) -> dict:
         """
-        Takes in a dictionary of data, where the key is the entity name, and the value is a list of jsons containing the data.
-        The function then validates the data against the resolved schema.
-        
-        Args:
-        - data_map (dict): A dictionary where keys are entity names and values are lists of JSON objects to be validated.
-        - resolved_schema (dict): A dict of resolved JSON schema objects to validate against.
+        Validates the data in self.data_map against the schemas in self.resolved_schema.
 
         Returns:
         - dict: A dictionary containing validation results for each entity.
         """
         validation_results = {}
-        
+
         try:
             logger.info("Validating Data with Schema...")
-            data_nodes = list(data_map.keys())
+            data_nodes = list(self.data_map.keys())
             logger.info(f"Data nodes: {data_nodes}")
-            schema_keys = [key[:-5] if key.endswith('.yaml') else key for key in resolved_schema.keys()]
+            schema_keys = [key[:-5] if key.endswith('.yaml') else key for key in self.resolved_schema.keys()]
             logger.info(f"Schema keys: {schema_keys}")
         except Exception as e:
             logger.error(f"Error in validate_schema accessing data or schema keys: {e}")
             return validation_results
-        
+
         for node in data_nodes:
             if node not in schema_keys:
                 logger.warning(f"Warning: {node} not found in resolved schema keys.")
                 continue
-        
+
             try:
-                data = data_map[node]
-                schema = resolved_schema[f"{node}.yaml"]
+                data = self.data_map[node]
+                schema = self.resolved_schema[f"{node}.yaml"]
                 validator = Draft4Validator(schema)
                 logger.info(f"Validator set up for node {node}.")
             except Exception as e:
@@ -138,9 +139,10 @@ class Validate:
                     node_results.append(result)
                 except Exception as e:
                     logger.error(f"Error in validate_schema validating object at index {idx} for node {node}: {e}")
-                
+
             validation_results[node] = node_results
-        
+
+        self.validation_result = validation_results
         return validation_results
     
     def list_entities(self) -> list:
@@ -190,6 +192,7 @@ class Validate:
             for entity in entities:
                 key_map[entity] = self.list_index_by_entity(entity)
             logger.info("Keymap created")
+            self.key_map = key_map
             return key_map
         except Exception as e:
             logger.error(f"Error in make_keymap: {e}")
