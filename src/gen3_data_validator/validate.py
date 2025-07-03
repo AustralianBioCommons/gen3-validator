@@ -31,10 +31,11 @@ class Validate:
     def __init__(self, data_map, resolved_schema):
         self.data_map = data_map
         self.resolved_schema = resolved_schema
-        logger.info("Initialising Validate class with data map and resolved schema.")
-        self.validation_result = None
-        self.key_map = None
-
+        logger.info("Initializing Validate class with data map and resolved schema.")
+        self.validation_result = self.validate_schema(self.data_map, self.resolved_schema)
+        self.key_map = self.make_keymap()
+    
+    
     def validate_object(self, obj, idx, validator) -> list:
         """
         Validates a single JSON object against a provided JSON schema validator.
@@ -133,7 +134,6 @@ class Validate:
                 
             validation_results[node] = node_results
         
-        self.validation_result = validation_results
         return validation_results
     
     def list_entities(self) -> list:
@@ -183,7 +183,6 @@ class Validate:
             for entity in entities:
                 key_map[entity] = self.list_index_by_entity(entity)
             logger.info("Keymap created")
-            self.data_map = key_map
             return key_map
         except Exception as e:
             logger.error(f"Error in make_keymap: {e}")
