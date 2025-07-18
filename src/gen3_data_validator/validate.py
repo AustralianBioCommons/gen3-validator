@@ -47,8 +47,8 @@ class Validate:
         self.validation_result = None
         self.key_map = None
         logger.info("Validate class initialised.")
-    
-    
+
+
     def validate_object(self, obj, idx, validator) -> list:
         """
         Validates a single JSON object against a provided JSON schema validator.
@@ -231,7 +231,7 @@ class Validate:
 
         return return_objects
 
-    def pull_index_of_entity(self, entity: str, index_key: int, result_type: str = "FAIL", return_failed: bool = True) -> dict:
+    def pull_index_of_entity(self, entity: str, index_key: int, result_type: str = "FAIL", return_failed: bool = True) -> list:
         """
         Retrieves the validation result for a specified entity and index key.
 
@@ -242,28 +242,35 @@ class Validate:
             return_failed (bool, optional): Flag to determine if only failed results should be returned.
 
         Returns:
-            dict: The validation result for the specified entity and index key, or None if not found.
+            list: List of objects containing each validation result for the specified entity and index 
+            key, or None if not found. Each element in the list corresponds to a validation result
+            for a specific property, while the index corresponds to the entry.
+
         """
         try:
+            logger.debug(f"Retrieving validation results for entity: {entity}")
             data = self.validation_result[entity]
-            index_data = next((item[index_key] for item in data if index_key in item), None)
-            
+            logger.debug(f"Data for entity '{entity}': {data}")
+            # index_data = next((item[index_key] for item in data if index_key in item), None)
+            index_name = f"index_{index_key}"
+            index_data = data[index_key][index_name]
+            logger.debug(f"index_data for index_key '{index_key}': {index_data}")
             return_list = []
             for obj in index_data:
                 val_result = obj.get("validation_result")
-                
+
                 if result_type == "ALL":
                     return_list.append(obj)
                     continue
-                
+
                 if val_result == result_type:
                     return_list.append(obj)
-            
+
             return return_list
         except Exception as e:
             logger.error(f"Error in pull_index_of_entity for entity {entity} at index {index_key}: {e}")
             return []
-    
+
 
 
 class ValidateStats(Validate):
