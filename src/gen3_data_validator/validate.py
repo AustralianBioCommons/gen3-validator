@@ -320,13 +320,13 @@ class ValidateStats(Validate):
         try:
             index_data = self.pull_index_of_entity(entity = entity, index_key = index_key, result_type = result_type)
             for obj in index_data:
-                val_result = obj.get("validation_result", None)
+                val_result = obj["validation_result"]
                 if result_type == "ALL":
                     validation_count += 1
                     continue
 
-            if val_result == result_type:
-                validation_count += 1
+                if val_result == result_type:
+                    validation_count += 1
 
             if print_results:
                 print(f"Number of {result_type} validations for {entity} at {index_key}': {validation_count}")
