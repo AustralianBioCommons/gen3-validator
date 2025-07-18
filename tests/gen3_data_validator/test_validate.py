@@ -176,3 +176,44 @@ def test_pull_index_of_entity(validator_fail_fixture, index_0_validator_sample_f
     pull = validate.pull_index_of_entity('sample', 0)[0]
     expected = index_0_validator_sample_fail_result[0]
     assert pull == expected
+
+
+def test_init_ValidateStats(validator_fail_fixture):
+    validate = validator_fail_fixture
+    stats = ValidateStats(validate)
+    assert stats.validation_result == validate.validation_result
+
+
+@pytest.fixture
+def validate_stats_fail_fixture(validator_fail_fixture):
+    validate = validator_fail_fixture
+    validate.validate_schema()
+    stats = ValidateStats(validate)
+    return stats
+
+@pytest.fixture
+def validate_stats_pass_fixture(validator_pass_fixture):
+    validate = validator_pass_fixture
+    validate.validate_schema()
+    stats = ValidateStats(validate)
+    return stats
+
+def test_n_rows_with_errors(validate_stats_fail_fixture):
+    stats = validate_stats_fail_fixture
+    result = stats.n_rows_with_errors('sample')
+    assert result == 2
+
+def test_n_rows_with_errors_pass(validate_stats_pass_fixture):
+    stats = validate_stats_pass_fixture
+    result = stats.n_rows_with_errors('sample')
+    assert result == 0
+
+
+def test_count_results_by_index(validate_stats_fail_fixture):
+    stats = validate_stats_fail_fixture
+    assert stats.count_results_by_index(entity="sample", index_key=0, result_type="ALL") == 3
+    assert stats.count_results_by_index(entity="sample", index_key=0, result_type="FAIL") == 3
+    assert stats.count_results_by_index(entity="sample", index_key=0, result_type="PASS") == 0
+    assert stats.count_results_by_index(entity="sample", index_key=2, result_type="PASS") == 1
+    assert stats.count_results_by_index(entity="sample", index_key=2, result_type="FAIL") == 0
+    assert stats.count_results_by_index(entity="sample", index_key=2, result_type="ALL") == 1
