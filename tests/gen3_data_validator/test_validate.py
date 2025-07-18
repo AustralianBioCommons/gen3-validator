@@ -7,32 +7,37 @@ import os
 
 
 @pytest.fixture
-def mock_data_map():
-    return {
-        'lipidomics_assay': [{'key1': 'value1'}, {'key2': 'value2'}],
-        'sample': [{'key3': 'value3'}, {'key4': 'value4'}]
-    }
+def mock_data_map_fail():
+    with open('tests/data/data_maps/fail_test_data_map.json') as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def mock_data_map_pass():
+    with open('tests/data/data_maps/pass_test_data_map.json') as f:
+        return json.load(f)
 
 
 @pytest.fixture
 def mock_resolved_schema():
-    return {
-        "$schema": "http://json-schema.org/draft-04/schema#",
-        "type": "object",
-        "properties": {
-            "key1": {"type": "string"},
-            "key2": {"type": "string"},
-        },
-        "additionalProperties": False,
-        "required": []
-    }
+    with open('tests/schema/gen3_test_schema_resolved.json') as f:
+        return json.load(f)
 
 
-def test_init_Validate(mock_data_map, mock_resolved_schema):
-    validate = Validate(data_map=mock_data_map, resolved_schema=mock_resolved_schema)
-    assert validate.data_map == mock_data_map
+@pytest.fixture
+def validator_pass_fixture(mock_data_map_pass, mock_resolved_schema):
+    return Validate(data_map=mock_data_map_pass, resolved_schema=mock_resolved_schema)
+
+
+@pytest.fixture
+def validator_fail_fixture(mock_data_map_fail, mock_resolved_schema):
+    return Validate(data_map=mock_data_map_fail, resolved_schema=mock_resolved_schema)
+
+
+def test_init_Validate(validator_pass_fixture, mock_data_map_pass, mock_resolved_schema):
+    validate = validator_pass_fixture
+    assert validate.data_map == mock_data_map_pass
     assert validate.resolved_schema == mock_resolved_schema
     assert validate.validation_result is None
     assert validate.key_map is None
 
-# TODO - Create data folder in tests dir containing schema, resolved schema, and some example data file, maybe two data nodes, with two objects each
