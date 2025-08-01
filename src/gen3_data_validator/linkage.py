@@ -3,7 +3,7 @@ from pydantic import create_model
 
 
 class TestLinkage:
-    def __init__(self, schema_resolver, data_parser, root_node: List[str] = None):
+    def __init__(self, root_node: List[str] = None):
         """
         Initializes the TestLinkage class with injected dependencies.
 
@@ -17,18 +17,19 @@ class TestLinkage:
         """
         if root_node is None:
             root_node = ['subject']
-        self.schema_resolver = schema_resolver  # Injected ResolveSchema instance
-        self.data_parser = data_parser  # Injected ParseData instance
-        self.data_dict = self.data_parser.data_dict
-        self.link_suffix = self.data_parser.link_suffix
         self.root_node = root_node
-        self.data_nodes = self.data_parser.data_nodes
-        self.linkage_config = self.generate_config(self.data_dict)
-        self.link_validation_results = self.validate_links(
-            data_map=self.data_dict,
-            config=self.linkage_config,
-            root_node=self.root_node,
-        )
+        # self.data_parser = data_parser  # Injected ParseData instance
+        # self.data_dict = self.data_parser.data_dict
+        # self.link_suffix = self.data_parser.link_suffix
+        # self.root_node = root_node
+        # self.data_nodes = self.data_parser.data_nodes
+        # self.linkage_config = self.generate_config(self.data_dict)
+        # self.link_validation_results = self.validate_links(
+        #     data_map=self.data_dict,
+        #     config=self.linkage_config,
+        #     root_node=self.root_node,
+        # )
+        
 
     def _find_fk(self, data: dict) -> str:
         """
