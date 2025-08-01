@@ -7,10 +7,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-class TestLinkage:
+class Linkage:
     def __init__(self, root_node: List[str] = None):
         """
-        Initializes the TestLinkage class with injected dependencies.
+        Initializes the Linkage class with injected dependencies.
 
         Args:
             root_node (list[str], optional): List of root node names. These are
@@ -20,7 +20,7 @@ class TestLinkage:
         if root_node is None:
             root_node = ['subject']
         self.root_node = root_node
-        logger.debug(f"Initialized TestLinkage with root_node: {self.root_node}")
+        logger.debug(f"Initialized Linkage with root_node: {self.root_node}")
         self.link_validation_results = None
 
     def _find_fk(self, data: dict) -> str:

@@ -250,25 +250,50 @@ class Validate:
         try:
             logger.debug(f"Retrieving validation results for entity: {entity}")
             data = self.validation_result[entity]
-            logger.debug(f"Data for entity '{entity}': {data}")
-            # index_data = next((item[index_key] for item in data if index_key in item), None)
+            
+            if not isinstance(data, list):
+                raise TypeError(
+                    f"Data for entity '{entity}' is not a list, got {type(data).__name__}: {repr(data)[:500]}"
+                )
+
+            if not isinstance(index_key, int):
+                raise TypeError(
+                    f"index_key must be an integer, got {type(index_key).__name__}: {index_key}"
+                )
+
+            # Build the key for the index
             index_name = f"index_{index_key}"
+
+            # Get the data for the specific index
             index_data = data[index_key][index_name]
             logger.debug(f"index_data for index_key '{index_key}': {index_data}")
-            return_list = []
+
+            # Collect results based on result_type
+            results = []
             for obj in index_data:
                 val_result = obj.get("validation_result")
+                if result_type == "ALL" or val_result == result_type:
+                    results.append(obj)
 
-                if result_type == "ALL":
-                    return_list.append(obj)
-                    continue
+            return results
 
-                if val_result == result_type:
-                    return_list.append(obj)
-
-            return return_list
         except Exception as e:
-            logger.error(f"Error in pull_index_of_entity for entity {entity} at index {index_key}: {e}")
+            import traceback
+            logger.error(
+                f"Error in pull_index_of_entity for entity '{entity}' at index '{index_key}': {e}\n"
+                f"Traceback:\n{traceback.format_exc()}"
+            )
+            # Help message for common TypeError
+            if (
+                isinstance(e, TypeError)
+                and "list indices must be integers or slices, not str" in str(e)
+            ):
+                logger.error(
+                    "TypeError likely due to trying to access a list with a string key. "
+                    f"Check if data[{index_key}] is a list when it should be a dict. "
+                    f"data[{index_key}] = "
+                    f"{repr(data[index_key]) if isinstance(data, list) and isinstance(index_key, int) and index_key < len(data) else 'N/A'}"
+                )
             return []
 
 
@@ -299,7 +324,7 @@ class ValidateStats(Validate):
             logger.error(f"Error in n_rows_with_errors for entity {entity}: {e}")
             return 0
     
-    def count_results_by_index(self, entity: str, index_key: str, result_type: str = "FAIL", print_results: bool = False):
+    def count_results_by_index(self, entity: str, index_key: int, result_type: str = "FAIL", print_results: bool = False):
         """
         Counts the number of validation results based on a specified entity and index_key.
         For example the entity 'sample' will have an error in row 1 / index 1, which contains
@@ -308,7 +333,7 @@ class ValidateStats(Validate):
 
         Args:
             entity (str): The name of the entity to count validation results for.
-            index_key (str): The key/index to count validation results for.
+            index_key (int): The key/index to count validation results for.
             result_type (str, optional): The type of validation result to count. Either ["PASS", "FAIL", "ALL"]
             print_results (bool, optional): Flag to print the results.
 
@@ -318,6 +343,7 @@ class ValidateStats(Validate):
         validation_count = 0
         val_result = None
         try:
+            
             index_data = self.pull_index_of_entity(entity = entity, index_key = index_key, result_type = result_type)
             for obj in index_data:
                 val_result = obj["validation_result"]
@@ -355,7 +381,8 @@ class ValidateStats(Validate):
             index_keys = self.list_index_by_entity(entity=entity)
             
             for index_key in index_keys:
-                count = self.count_results_by_index(entity=entity, index_key=index_key, result_type=result_type)
+                index_key_int = int(index_key.split("index_")[1])
+                count = self.count_results_by_index(entity=entity, index_key=index_key_int, result_type=result_type)
                 validation_count += count
             
             if print_results:
@@ -363,26 +390,8 @@ class ValidateStats(Validate):
         except Exception as e:
             logger.error(f"Error in count_results_by_entity for entity {entity}: {e}")
         return validation_count
-    
-    def n_errors_per_entity(self, entity: str) -> int:
-        """
-        Returns the number of errors that have validation errors for a given entity.
 
-        Args:
-            entity (str): The name of the entity to check for validation errors.
 
-        Returns:
-            int: The number of rows with validation errors.
-        """
-        try:
-            n_errors = len(self.pull_entity(entity, return_failed=True))
-            logger.info(f"Number of errors per entity {entity}: {n_errors}")
-            return n_errors
-        except Exception as e:
-            logger.error(f"Error in n_errors_per_entity for entity {entity}: {e}")
-            return 0
-    
-    
     def n_errors_per_entry(self, entity: str, index_key: int) -> int:
         """
         Returns the number of validation errors for a given entity and index.
@@ -401,7 +410,7 @@ class ValidateStats(Validate):
         except Exception as e:
             logger.error(f"Error in n_errors_per_entry for entity {entity} at index {index_key}: {e}")
             return 0
-    
+
     def total_validation_errors(self) -> int:
         """
         Calculates the total number of validation errors across all entities.
@@ -460,15 +469,13 @@ class ValidateStats(Validate):
 
 class ValidateSummary(Validate):
     def __init__(self, validate_instance: Validate):
+        super().__init__(validate_instance.data_map, validate_instance.resolved_schema)
         self.data_map = validate_instance.data_map
         self.resolved_schema = validate_instance.resolved_schema
         self.validation_result = validate_instance.validation_result
-        super().__init__(validate_instance.data_map, validate_instance.resolved_schema)
         self.flattened_validation_results = None
         logger.info("Initializing ValidateSummary class.")
-    
-    
-    
+
     def flatten_validation_results(self, result_type: str = "FAIL") -> dict:
         """
         Flattens the validation results created when initializing the Validate class.
@@ -491,7 +498,8 @@ class ValidateSummary(Validate):
             flattened_results = []
             for entity, index_list in key_map.items():
                 for index in index_list:
-                    index_obj = self.pull_index_of_entity(entity=entity, index_key=index, result_type=result_type)
+                    index_int = int(index.strip("index_"))
+                    index_obj = self.pull_index_of_entity(entity=entity, index_key=index_int, result_type=result_type)
                     flattened_results.extend(
                         {"row": index.strip("index_"),
                          "entity": entity,
