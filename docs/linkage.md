@@ -5,7 +5,7 @@ The `linkage` module provides functionality to validate relationships between di
 
 ## Classes
 
-### TestLinkage
+### Linkage
 
 Validates relationships between different data entities based on a schema.
 
@@ -42,14 +42,14 @@ Validates relationships between different data entities based on a schema.
 
 ```python
 from gen3_data_validator import ResolveSchema, ParseData
-from gen3_data_validator.linkage import TestLinkage
+from gen3_data_validator.linkage import Linkage
 
 # Initialize required components
 schema_resolver = ResolveSchema("path/to/schema.json")
 data_parser = ParseData(data_folder_path="path/to/data")
 
 # Create and run linkage tests
-linkage_tester = TestLinkage(schema_resolver, data_parser)
+linkage_tester = Linkage(schema_resolver, data_parser)
 results = linkage_tester.validate_links(
     data_map=data_parser.data_dict,
     config=linkage_tester.linkage_config,

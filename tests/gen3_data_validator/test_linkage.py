@@ -1,18 +1,18 @@
 import pytest
-from gen3_data_validator.linkage import TestLinkage
+from gen3_data_validator.linkage import Linkage
 
 @pytest.fixture
 def fixture_root_node():
     return ['subject']
 
-def test_init_TestLinkage(fixture_root_node):
-    Linkage = TestLinkage()
-    assert Linkage.root_node == fixture_root_node
-    assert Linkage.link_validation_results is None
+def test_init_Linkage(fixture_root_node):
+    LinkageInstance = Linkage()
+    assert LinkageInstance.root_node == fixture_root_node
+    assert LinkageInstance.link_validation_results is None
 
 @pytest.fixture
-def fixture_TestLinkage(fixture_root_node):
-    return TestLinkage(root_node=fixture_root_node)
+def fixture_Linkage(fixture_root_node):
+    return Linkage(root_node=fixture_root_node)
 
 @pytest.fixture
 def fixture_data_dict_pass():
@@ -90,13 +90,13 @@ def fixture_link_config():
     }
 
 def test_generate_config(fixture_data_dict_pass, fixture_link_config):
-    Linkage = TestLinkage()
-    config = Linkage.generate_config(fixture_data_dict_pass)
+    LinkageInstance = Linkage()
+    config = LinkageInstance.generate_config(fixture_data_dict_pass)
     expected_config = fixture_link_config
     assert config == expected_config
 
-def test_validate_links_fail(fixture_data_dict_fail, fixture_link_config, fixture_TestLinkage):
-    Linkage = fixture_TestLinkage
+def test_validate_links_fail(fixture_data_dict_fail, fixture_link_config, fixture_Linkage):
+    Linkage = fixture_Linkage
     result = Linkage.validate_links(fixture_data_dict_fail, fixture_link_config)
     expected = {
         "sample": ["subject_e5616257f1"],
@@ -105,8 +105,8 @@ def test_validate_links_fail(fixture_data_dict_fail, fixture_link_config, fixtur
     }
     assert result == expected
 
-def test_validate_links_pass(fixture_data_dict_pass, fixture_link_config, fixture_TestLinkage):
-    Linkage = fixture_TestLinkage
+def test_validate_links_pass(fixture_data_dict_pass, fixture_link_config, fixture_Linkage):
+    Linkage = fixture_Linkage
     result = Linkage.validate_links(fixture_data_dict_pass, fixture_link_config)
     expected = {
         "sample": [],
@@ -136,8 +136,8 @@ def fixture_find_fk_cases():
         ),
     ]
 
-def test_find_fk(fixture_TestLinkage, fixture_find_fk_cases):
-    linkage = fixture_TestLinkage
+def test_find_fk(fixture_Linkage, fixture_find_fk_cases):
+    linkage = fixture_Linkage
     for data, expected in fixture_find_fk_cases:
         assert linkage._find_fk(data) == expected
 
@@ -152,8 +152,8 @@ def fixture_data_map_no_fk():
         ]
     }
 
-def test_generate_config_handles_no_fk(fixture_TestLinkage, fixture_data_map_no_fk):
-    linkage = fixture_TestLinkage
+def test_generate_config_handles_no_fk(fixture_Linkage, fixture_data_map_no_fk):
+    linkage = fixture_Linkage
     config = linkage.generate_config(fixture_data_map_no_fk)
     assert config["subject"]["foreign_key"] is None
     assert config["sample"]["foreign_key"] is None
@@ -184,28 +184,28 @@ def fixture_config_root_broken():
         "sample": {"primary_key": "samples", "foreign_key": "subjects"},
     }
 
-def test_test_config_links_valid(fixture_TestLinkage, fixture_config_valid):
-    linkage = fixture_TestLinkage
+def test_test_config_links_valid(fixture_Linkage, fixture_config_valid):
+    linkage = fixture_Linkage
     result = linkage.test_config_links(fixture_config_valid, root_node=["subject"])
     assert result == "valid"
 
-def test_test_config_links_invalid(fixture_TestLinkage, fixture_config_invalid):
-    linkage = fixture_TestLinkage
+def test_test_config_links_invalid(fixture_Linkage, fixture_config_invalid):
+    linkage = fixture_Linkage
     # Should not raise, but should return a dict with the broken link
     result = linkage.test_config_links(fixture_config_invalid, root_node=["subject"])
     assert isinstance(result, dict)
     assert "sample" in result
     assert result["sample"] == "not_a_real_pk"
 
-def test_test_config_links_root_node_broken_link_ignored(fixture_TestLinkage, fixture_config_root_broken):
-    linkage = fixture_TestLinkage
+def test_test_config_links_root_node_broken_link_ignored(fixture_Linkage, fixture_config_root_broken):
+    linkage = fixture_Linkage
     result = linkage.test_config_links(fixture_config_root_broken, root_node=["subject"])
     assert result == "valid"
 
 
 
-def test_test_config_links_missing_foreign_key_raises(fixture_TestLinkage):
-    linkage = fixture_TestLinkage
+def test_test_config_links_missing_foreign_key_raises(fixture_Linkage):
+    linkage = fixture_Linkage
     config = {
         "subject": {"primary_key": "subjects"},  # missing 'foreign_key'
         "sample": {"primary_key": "samples", "foreign_key": "subjects"},
@@ -213,8 +213,8 @@ def test_test_config_links_missing_foreign_key_raises(fixture_TestLinkage):
     with pytest.raises(KeyError):
         linkage.test_config_links(config, root_node=["subject"])
 
-def test_test_config_links_missing_primary_key_raises(fixture_TestLinkage):
-    linkage = fixture_TestLinkage
+def test_test_config_links_missing_primary_key_raises(fixture_Linkage):
+    linkage = fixture_Linkage
     config = {
         "subject": {"foreign_key": None},  # missing 'primary_key'
         "sample": {"primary_key": "samples", "foreign_key": "subjects"},
@@ -222,8 +222,8 @@ def test_test_config_links_missing_primary_key_raises(fixture_TestLinkage):
     with pytest.raises(KeyError):
         linkage.test_config_links(config, root_node=["subject"])
 
-def test_test_config_links_non_dict_config_raises(fixture_TestLinkage):
-    linkage = fixture_TestLinkage
+def test_test_config_links_non_dict_config_raises(fixture_Linkage):
+    linkage = fixture_Linkage
     config = [
         {"primary_key": "subjects", "foreign_key": None},
         {"primary_key": "samples", "foreign_key": "subjects"},
@@ -231,8 +231,8 @@ def test_test_config_links_non_dict_config_raises(fixture_TestLinkage):
     with pytest.raises(TypeError):
         linkage.test_config_links(config, root_node=["subject"])
 
-def test_test_config_links_non_dict_value_raises(fixture_TestLinkage):
-    linkage = fixture_TestLinkage
+def test_test_config_links_non_dict_value_raises(fixture_Linkage):
+    linkage = fixture_Linkage
     config = {
         "subject": ["subjects", None],  # not a dict
         "sample": {"primary_key": "samples", "foreign_key": "subjects"},
@@ -272,29 +272,29 @@ def fixture_config_for_keys():
         "genomics_assay": {"primary_key": "genomics_assays", "foreign_key": "samples"},
     }
 
-def test_get_primary_keys(fixture_TestLinkage, fixture_data_map_for_keys, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_primary_keys(fixture_Linkage, fixture_data_map_for_keys, fixture_config_for_keys):
+    linkage = fixture_Linkage
     pk_result = linkage.get_primary_keys(fixture_data_map_for_keys, fixture_config_for_keys)
     assert pk_result["subject"] == ["subject_1", "subject_2"]
     assert pk_result["sample"] == ["sample_1", "sample_2"]
     assert pk_result["genomics_assay"] == ["ga_1", "ga_2"]
 
-def test_get_primary_keys_missing_entity(fixture_TestLinkage, fixture_data_map_for_keys, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_primary_keys_missing_entity(fixture_Linkage, fixture_data_map_for_keys, fixture_config_for_keys):
+    linkage = fixture_Linkage
     config = dict(fixture_config_for_keys)
     config["not_in_data"] = {"primary_key": "foo", "foreign_key": None}
     with pytest.raises(KeyError):
         linkage.get_primary_keys(fixture_data_map_for_keys, config)
 
-def test_get_primary_keys_none_pk_field(fixture_TestLinkage, fixture_data_map_for_keys, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_primary_keys_none_pk_field(fixture_Linkage, fixture_data_map_for_keys, fixture_config_for_keys):
+    linkage = fixture_Linkage
     config = dict(fixture_config_for_keys)
     config["subject"]["primary_key"] = None
     pk_result = linkage.get_primary_keys(fixture_data_map_for_keys, config)
     assert pk_result["subject"] == []
 
-def test_get_foreign_keys(fixture_TestLinkage, fixture_data_map_for_keys, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_foreign_keys(fixture_Linkage, fixture_data_map_for_keys, fixture_config_for_keys):
+    linkage = fixture_Linkage
     fk_result = linkage.get_foreign_keys(fixture_data_map_for_keys, fixture_config_for_keys)
     # subject has no foreign key
     assert fk_result["subject"] == []
@@ -303,22 +303,22 @@ def test_get_foreign_keys(fixture_TestLinkage, fixture_data_map_for_keys, fixtur
     # genomics_assay foreign key is "samples"
     assert fk_result["genomics_assay"] == ["sample_1", "sample_2", "sample_3", "sample_4"]
 
-def test_get_foreign_keys_missing_entity(fixture_TestLinkage, fixture_data_map_for_keys, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_foreign_keys_missing_entity(fixture_Linkage, fixture_data_map_for_keys, fixture_config_for_keys):
+    linkage = fixture_Linkage
     config = dict(fixture_config_for_keys)
     config["not_in_data"] = {"primary_key": "foo", "foreign_key": "bar"}
     with pytest.raises(KeyError):
         linkage.get_foreign_keys(fixture_data_map_for_keys, config)
 
-def test_get_foreign_keys_none_fk_field(fixture_TestLinkage, fixture_data_map_for_keys, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_foreign_keys_none_fk_field(fixture_Linkage, fixture_data_map_for_keys, fixture_config_for_keys):
+    linkage = fixture_Linkage
     config = dict(fixture_config_for_keys)
     config["sample"]["foreign_key"] = None
     fk_result = linkage.get_foreign_keys(fixture_data_map_for_keys, config)
     assert fk_result["sample"] == []
 
-def test_get_primary_keys_and_foreign_keys_empty_data(fixture_TestLinkage, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_primary_keys_and_foreign_keys_empty_data(fixture_Linkage, fixture_config_for_keys):
+    linkage = fixture_Linkage
     empty_data = {
         "subject": [],
         "sample": [],
@@ -329,8 +329,8 @@ def test_get_primary_keys_and_foreign_keys_empty_data(fixture_TestLinkage, fixtu
     assert pk_result == {"subject": [], "sample": [], "genomics_assay": []}
     assert fk_result == {"subject": [], "sample": [], "genomics_assay": []}
 
-def test_get_primary_keys_and_foreign_keys_missing_key_in_record(fixture_TestLinkage, fixture_config_for_keys):
-    linkage = fixture_TestLinkage
+def test_get_primary_keys_and_foreign_keys_missing_key_in_record(fixture_Linkage, fixture_config_for_keys):
+    linkage = fixture_Linkage
     data_map = {
         "subject": [{"name": "NoPK"}],  # missing "subjects"
         "sample": [{"bar": 123}],       # missing "samples"

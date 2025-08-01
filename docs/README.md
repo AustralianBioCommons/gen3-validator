@@ -94,7 +94,7 @@ Parses Excel files containing metadata templates.
 
 ### Linkage
 
-The `TestLinkage` class validates relationships between different data entities.
+The `Linkage` class validates relationships between different data entities.
 
 **Key Features:**
 - Validates foreign key relationships
