@@ -249,39 +249,17 @@ class Validate:
         """
         try:
             logger.debug(f"Retrieving validation results for entity: {entity}")
-
-            # Get the validation data for the entity
             data = self.validation_result[entity]
-            if isinstance(data, list):
-                logger.debug(f"First 2 items of data for entity '{entity}': {data[:2]}")
-            else:
-                logger.debug(f"Data for entity '{entity}': {str(data)[:500]}")
-
-            # Convert index_key to int if it's a string like "index_3"
-            if isinstance(index_key, str):
-                logger.warning(
-                    f"index_key is a string, expected int. index_key: {index_key}. Attempting conversion."
+            
+            if not isinstance(data, list):
+                raise TypeError(
+                    f"Data for entity '{entity}' is not a list, got {type(data).__name__}: {repr(data)[:500]}"
                 )
-                if index_key.startswith("index_"):
-                    try:
-                        index_key = int(index_key.split("_", 1)[1])
-                        logger.info(
-                            f"Converted index_key to int: {index_key} (type: {type(index_key)})"
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to convert index_key '{index_key}' to int: {e}"
-                        )
-                        raise Exception(
-                            f"TypeError: Could not convert index_key '{index_key}' to int for entity '{entity}': {e}"
-                        )
-                else:
-                    logger.error(
-                        f"index_key string '{index_key}' does not start with 'index_'."
-                    )
-                    raise Exception(
-                        f"TypeError: index_key '{index_key}' is not a valid format for entity '{entity}'."
-                    )
+
+            if not isinstance(index_key, int):
+                raise TypeError(
+                    f"index_key must be an integer, got {type(index_key).__name__}: {index_key}"
+                )
 
             # Build the key for the index
             index_name = f"index_{index_key}"
@@ -346,7 +324,7 @@ class ValidateStats(Validate):
             logger.error(f"Error in n_rows_with_errors for entity {entity}: {e}")
             return 0
     
-    def count_results_by_index(self, entity: str, index_key: str, result_type: str = "FAIL", print_results: bool = False):
+    def count_results_by_index(self, entity: str, index_key: int, result_type: str = "FAIL", print_results: bool = False):
         """
         Counts the number of validation results based on a specified entity and index_key.
         For example the entity 'sample' will have an error in row 1 / index 1, which contains
@@ -355,7 +333,7 @@ class ValidateStats(Validate):
 
         Args:
             entity (str): The name of the entity to count validation results for.
-            index_key (str): The key/index to count validation results for.
+            index_key (int): The key/index to count validation results for.
             result_type (str, optional): The type of validation result to count. Either ["PASS", "FAIL", "ALL"]
             print_results (bool, optional): Flag to print the results.
 
@@ -365,6 +343,7 @@ class ValidateStats(Validate):
         validation_count = 0
         val_result = None
         try:
+            
             index_data = self.pull_index_of_entity(entity = entity, index_key = index_key, result_type = result_type)
             for obj in index_data:
                 val_result = obj["validation_result"]
@@ -402,7 +381,8 @@ class ValidateStats(Validate):
             index_keys = self.list_index_by_entity(entity=entity)
             
             for index_key in index_keys:
-                count = self.count_results_by_index(entity=entity, index_key=index_key, result_type=result_type)
+                index_key_int = int(index_key.split("index_")[1])
+                count = self.count_results_by_index(entity=entity, index_key=index_key_int, result_type=result_type)
                 validation_count += count
             
             if print_results:
@@ -538,7 +518,8 @@ class ValidateSummary(Validate):
             flattened_results = []
             for entity, index_list in key_map.items():
                 for index in index_list:
-                    index_obj = self.pull_index_of_entity(entity=entity, index_key=index, result_type=result_type)
+                    index_int = int(index.strip("index_"))
+                    index_obj = self.pull_index_of_entity(entity=entity, index_key=index_int, result_type=result_type)
                     flattened_results.extend(
                         {"row": index.strip("index_"),
                          "entity": entity,

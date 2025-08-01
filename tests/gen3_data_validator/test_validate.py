@@ -170,12 +170,43 @@ def test_pull_entity(validator_fail_fixture, index_0_validator_sample_fail_resul
     assert pull == expected
 
 
-def test_pull_index_of_entity(validator_fail_fixture, index_0_validator_sample_fail_result):
+def test_pull_index_of_entity_success(validator_fail_fixture, index_0_validator_sample_fail_result):
     validate = validator_fail_fixture
     validate.validate_schema()
-    pull = validate.pull_index_of_entity('sample', 0)[0]
+    pull = validate.pull_index_of_entity('sample', 0)
+    assert isinstance(pull, list)
+    assert len(pull) > 0
     expected = index_0_validator_sample_fail_result[0]
-    assert pull == expected
+    assert pull[0] == expected
+
+def test_pull_index_of_entity_invalid_entity(validator_fail_fixture):
+    validate = validator_fail_fixture
+    validate.validate_schema()
+    # Should return [] and log error if entity does not exist
+    result = validate.pull_index_of_entity('not_an_entity', 0)
+    assert result == []
+
+def test_pull_index_of_entity_invalid_index_type(validator_fail_fixture):
+    validate = validator_fail_fixture
+    validate.validate_schema()
+    # Should return [] and log error if index_key is not int
+    result = validate.pull_index_of_entity('sample', 'not_an_int')
+    assert result == []
+
+def test_pull_index_of_entity_index_out_of_range(validator_fail_fixture):
+    validate = validator_fail_fixture
+    validate.validate_schema()
+    # Should return [] and log error if index_key is out of range
+    result = validate.pull_index_of_entity('sample', 100)
+    assert result == []
+
+def test_pull_index_of_entity_data_not_list(monkeypatch, validator_fail_fixture):
+    validate = validator_fail_fixture
+    validate.validate_schema()
+    # Patch validation_result to make data not a list
+    validate.validation_result['sample'] = {"foo": "bar"}
+    result = validate.pull_index_of_entity('sample', 0)
+    assert result == []
 
 
 def test_init_ValidateStats(validator_fail_fixture):
