@@ -18,17 +18,6 @@ class TestLinkage:
         if root_node is None:
             root_node = ['subject']
         self.root_node = root_node
-        # self.data_parser = data_parser  # Injected ParseData instance
-        # self.data_dict = self.data_parser.data_dict
-        # self.link_suffix = self.data_parser.link_suffix
-        # self.root_node = root_node
-        # self.data_nodes = self.data_parser.data_nodes
-        # self.linkage_config = self.generate_config(self.data_dict)
-        # self.link_validation_results = self.validate_links(
-        #     data_map=self.data_dict,
-        #     config=self.linkage_config,
-        #     root_node=self.root_node,
-        # )
         
 
     def _find_fk(self, data: dict) -> str:
@@ -82,38 +71,6 @@ class TestLinkage:
                     "foreign_key": None
                 }
         return config
-
-    def generate_models(self, config: Dict[str, Any]) -> Dict[str, type]:
-        """
-        Dynamically generate Pydantic models based on a configuration dictionary.
-
-        Args:
-            config (dict): A dictionary defining the entities and their fields.
-
-        Returns:
-            dict: A dictionary of dynamically created Pydantic models.
-        """
-        models = {}
-
-        for entity_name, entity_config in config.items():
-            fields = {}
-
-            # Add primary key field
-            pk = entity_config.get("primary_key")
-            if pk:
-                fields[pk] = (str, ...)  # Primary key is required
-
-            # Add foreign key field
-            fk = entity_config.get("foreign_key")
-            if fk:
-                fields[fk] = (str, None)  # Foreign key is optional
-
-            # Create the model dynamically
-            models[entity_name] = create_model(
-                entity_name.capitalize(), **fields
-            )
-
-        return models
 
     def test_config_links(self, config_map: Dict[str, Any], root_node: List[str] = None) -> dict:
         """
