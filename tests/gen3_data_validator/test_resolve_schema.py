@@ -18,75 +18,6 @@ def test_init_ResolveSchema(test_schema_path):
 def ResolveSchema_instance(test_schema_path):
     return ResolveSchema(test_schema_path)
 
-@pytest.fixture
-def example_node_name():
-    return 'sample'
-
-
-@pytest.fixture
-def base_jsonschema():
-    return {
-        "sample.yaml": {
-            "$schema": "http://json-schema.org/draft-04/schema#",
-            "id": "sample",
-            "links": [
-                {
-                    "backref": "samples",
-                    "label": "taken_from",
-                    "multiplicity": "many_to_one",
-                    "name": "subjects",
-                    "required": True,
-                    "target_type": "subject"
-                }
-            ],
-            "properties": {
-                "$ref": "_definitions.yaml#/ubiquitous_properties",
-                "sample_id": {
-                    "description": "A unique sample identifier",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "type",
-                "submitter_id",
-                "sample_id"
-            ]
-        },
-        "medication.yaml": {
-            "$schema": "http://json-schema.org/draft-04/schema#",
-            "id": "medication",
-            "links": [
-                {
-                    "backref": "medications",
-                    "label": "taken_by",
-                    "multiplicity": "one_to_one",
-                    "name": "subjects",
-                    "required": True,
-                    "target_type": "subject"
-                }
-            ],
-            "properties": {
-                "$ref": "_definitions.yaml#/ubiquitous_properties",
-                "antithrombotic_meds": {
-                    "description": "Self-reported / measured use of antithrobotic medication ",
-                    "enum": [
-                        "yes",
-                        "no"
-                    ]
-                },
-                "subjects": {
-                    "$ref": "_definitions.yaml#/to_one"
-                }
-            },
-            "required": [
-                "type",
-                "submitter_id",
-                "subjects"
-            ]
-        },
-        "_definitions.yaml": None
-        
-    }
 
 def test_read_json(ResolveSchema_instance, test_schema_path):
     mock_data = [{"submitter_id": "subject-example-990910001"}]
@@ -96,7 +27,7 @@ def test_read_json(ResolveSchema_instance, test_schema_path):
         assert result == mock_data
 
 
-def test_get_nodes(ResolveSchema_instance, example_node_name):
+def test_get_nodes(ResolveSchema_instance):
     schema = {
         "sample": "schema_content",
         "medication": "schema_content"
