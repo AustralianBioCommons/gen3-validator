@@ -21,6 +21,7 @@ class TestLinkage:
             root_node = ['subject']
         self.root_node = root_node
         logger.debug(f"Initialized TestLinkage with root_node: {self.root_node}")
+        self.link_validation_results = None
 
     def _find_fk(self, data: dict) -> str:
         """
@@ -447,4 +448,5 @@ class TestLinkage:
                 logger.info(
                     f"Entity '{entity}' has no invalid foreign keys."
                 )
+        self.link_validation_results = validation_results
         return validation_results
