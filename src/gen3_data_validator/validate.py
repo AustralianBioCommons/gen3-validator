@@ -469,15 +469,13 @@ class ValidateStats(Validate):
 
 class ValidateSummary(Validate):
     def __init__(self, validate_instance: Validate):
+        super().__init__(validate_instance.data_map, validate_instance.resolved_schema)
         self.data_map = validate_instance.data_map
         self.resolved_schema = validate_instance.resolved_schema
         self.validation_result = validate_instance.validation_result
-        super().__init__(validate_instance.data_map, validate_instance.resolved_schema)
         self.flattened_validation_results = None
         logger.info("Initializing ValidateSummary class.")
-    
-    
-    
+
     def flatten_validation_results(self, result_type: str = "FAIL") -> dict:
         """
         Flattens the validation results created when initializing the Validate class.
