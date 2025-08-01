@@ -99,6 +99,10 @@ class TestLinkage:
         Returns:
             dict: A dictionary of entities with broken links and their foreign keys if any are found.
                   Returns "valid" if no broken links are detected.
+
+        Raises:
+            KeyError: If a required key ('primary_key' or 'foreign_key') is missing in the config for any entity.
+            TypeError: If config_map is not a dictionary or its values are not dictionaries.
         """
         if root_node is None:
             root_node = ['subject']
@@ -109,31 +113,64 @@ class TestLinkage:
         logger.info("=== Validating Config Map ===")
         logger.info(f"Root Node = {root_node}")
 
-        for key, value in config_map.items():
-            fk = value['foreign_key']
+        try:
+            if not isinstance(config_map, dict):
+                raise TypeError(
+                    f"config_map must be a dictionary, got {type(config_map).__name__}."
+                )
+            for key, value in config_map.items():
+                if not isinstance(value, dict):
+                    raise TypeError(
+                        f"Config for entity '{key}' must be a dictionary, got {type(value).__name__}."
+                    )
+                if 'foreign_key' not in value:
+                    raise KeyError(
+                        f"Missing 'foreign_key' in config for entity '{key}'. "
+                        f"Check your configuration dictionary."
+                    )
+                if 'primary_key' not in value:
+                    raise KeyError(
+                        f"Missing 'primary_key' in config for entity '{key}'. "
+                        f"Check your configuration dictionary."
+                    )
 
-            # Check if fk of the current key matches with the primary key of any
-            # of the other entities
-            match_found = any(
-                fk == v['primary_key']
-                for k, v in config_map.items() if k != key
-            )
+                fk = value['foreign_key']
 
-            if not match_found and fk is not None:
-                # If the key is a root node, ignore the broken link
-                if key not in root_node:
-                    broken_links[key] = fk
-                    logger.warning(
-                        f"Broken link found: entity '{key}' with foreign key '{fk}' does not match any primary key."
-                    )
-                else:
-                    print(
-                        f"WARNING: Ignoring broken link for root node '{key}' "
-                        f"with foreign key '{fk}'"
-                    )
-                    logger.info(
-                        f"Ignoring broken link for root node '{key}' with foreign key '{fk}'"
-                    )
+                # Check if fk of the current key matches with the primary key of any
+                # of the other entities
+                match_found = any(
+                    fk == v['primary_key']
+                    for k, v in config_map.items() if k != key
+                )
+
+                if not match_found and fk is not None:
+                    # If the key is a root node, ignore the broken link
+                    if key not in root_node:
+                        broken_links[key] = fk
+                        logger.warning(
+                            f"Broken link found: entity '{key}' with foreign key '{fk}' does not match any primary key."
+                        )
+                    else:
+                        print(
+                            f"WARNING: Ignoring broken link for root node '{key}' "
+                            f"with foreign key '{fk}'"
+                        )
+                        logger.info(
+                            f"Ignoring broken link for root node '{key}' with foreign key '{fk}'"
+                        )
+
+        except KeyError as e:
+            logger.error(f"Configuration error: {e}")
+            print(f"Configuration error: {e}")
+            raise
+        except TypeError as e:
+            logger.error(f"Type error in configuration: {e}")
+            print(f"Type error in configuration: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during config validation: {e}")
+            print(f"Unexpected error during config validation: {e}")
+            raise
 
         if len(broken_links) == 0:
             print("Config Map Validated")
@@ -150,78 +187,200 @@ class TestLinkage:
         self, data_map: Dict[str, List[Dict[str, Any]]], config: Dict[str, Any]
     ) -> dict:
         """
-        Uses the config to read the entity data from the data_map, and then
-        uses the FK key outlined in the config to find the foreign key values.
-
-        For each entity, retrieves the value of the foreign key field (as specified in
-        the config) from each record. If the value is a dictionary with a 'submitter_id',
-        extracts the 'submitter_id'; otherwise, uses the value directly.
+        Extracts all foreign key values for each entity from the provided data map,
+        using the foreign key field specified in the config for each entity.
 
         Args:
-            data_map (Dict[str, List[Dict[str, Any]]]): The data map containing
-                the entity data
-            config (Dict[str, Any]): The config dictionary
+            data_map (Dict[str, List[Dict[str, Any]]]):
+                A dictionary where each key is an entity name (e.g., "sample", "subject"),
+                and each value is a list of records (dictionaries) for that entity.
+                Each record should contain the foreign key field as specified in the config.
+            config (Dict[str, Any]):
+                A dictionary where each key is an entity name, and each value is a dictionary
+                containing at least the key 'foreign_key', which specifies the field name
+                in the records to use as the foreign key.
 
         Returns:
-            dict: dictionary of entities and their foreign key values
+            Dict[str, List[Any]]:
+                A dictionary mapping each entity name to a list of extracted foreign key values.
+                If an entity has no foreign key specified in the config, its value will be an empty list.
+
+        Raises:
+            KeyError:
+                If an entity specified in the config is missing from the data_map.
+            Exception:
+                If an unexpected error occurs during extraction for any entity.
+
+        Notes:
+            - If a record's foreign key field is missing, that record is skipped with a warning.
+            - If the foreign key value is a dictionary containing a 'submitter_id', that value is used.
+            - Otherwise, the value of the foreign key field is used directly.
+            - If the foreign key field is None in the config, extraction is skipped for that entity.
+
+        Example:
+            data_map = {
+                "sample": [
+                    {"subjects": {"submitter_id": "subject_1"}, ...},
+                    {"subjects": "subject_2", ...}
+                ]
+            }
+            config = {
+                "sample": {"foreign_key": "subjects", ...}
+            }
+            # Returns: {"sample": ["subject_1", "subject_2"]}
         """
-        fk_entities = {}
         logger.info("Extracting foreign keys from data_map using config.")
 
-        for config_entity, config_keys in config.items():
-            entity_data = data_map[config_entity]
-            records_list = []
+        def extract_fk_values(entity, records, fk_field):
+            fk_values = []
+            for idx, record in enumerate(records):
+                if fk_field not in record:
+                    logger.warning(
+                        f"Record {idx} in entity '{entity}' is missing the foreign key field '{fk_field}'."
+                    )
+                    continue
+                fk = record.get(fk_field)
+                if not fk:
+                    continue
+                if isinstance(fk, dict) and 'submitter_id' in fk:
+                    fk_values.append(fk['submitter_id'])
+                    logger.debug(
+                        f"Entity '{entity}': extracted foreign key '{fk['submitter_id']}' from dict."
+                    )
+                else:
+                    fk_values.append(fk)
+                    logger.debug(
+                        f"Entity '{entity}': extracted foreign key '{fk}'."
+                    )
+            return fk_values
 
-            for record in entity_data:
-                fk = record.get(config_keys['foreign_key'])
-                if fk:
-                    if isinstance(fk, dict) and 'submitter_id' in fk:
-                        records_list.append(fk['submitter_id'])
-                        logger.debug(f"Entity '{config_entity}': extracted foreign key '{fk['submitter_id']}' from dict.")
-                    else:
-                        records_list.append(fk)
-                        logger.debug(f"Entity '{config_entity}': extracted foreign key '{fk}'.")
-            fk_entities[config_entity] = records_list
-            logger.info(f"Foreign keys for entity '{config_entity}': {records_list}")
+        fk_entities = {}
+        for entity, keys in config.items():
+            if entity not in data_map:
+                msg = (
+                    f"Entity '{entity}' specified in config is missing from data_map. "
+                    f"Available entities: {list(data_map.keys())}"
+                )
+                logger.error(msg)
+                raise KeyError(msg)
+
+            fk_field = keys.get('foreign_key')
+            if fk_field is None:
+                logger.info(f"No foreign key specified for entity '{entity}'. Skipping extraction.")
+                fk_entities[entity] = []
+                continue
+
+            records = data_map[entity]
+            try:
+                fk_values = extract_fk_values(entity, records, fk_field)
+                fk_entities[entity] = fk_values
+                logger.info(f"Foreign keys for entity '{entity}': {fk_values}")
+            except Exception as e:
+                logger.error(f"Unexpected error while extracting foreign keys for entity '{entity}': {e}")
+                raise Exception(
+                    f"An unexpected error occurred while extracting foreign keys for entity '{entity}': {e}"
+                ) from e
+
         return fk_entities
 
     def get_primary_keys(
         self, data_map: Dict[str, List[Dict[str, Any]]], config: Dict[str, Any]
     ) -> dict:
         """
-        Uses the config to read the entity data from the data_map, and then
-        uses the PK key outlined in the config to find the primary key values.
-
-        For each entity, retrieves the value of the primary key field (as specified in
-        the config) from each record. If the value is a dictionary with a 'submitter_id',
-        extracts the 'submitter_id'; otherwise, uses the value directly.
+        Extracts all primary key values for each entity from the provided data map,
+        using the primary key field specified in the config for each entity.
 
         Args:
-            data_map (Dict[str, List[Dict[str, Any]]]): The data map containing
-                the entity data
-            config (Dict[str, Any]): The config dictionary
+            data_map (Dict[str, List[Dict[str, Any]]]):
+                A dictionary where each key is an entity name (e.g., "sample", "subject"),
+                and each value is a list of records (dictionaries) for that entity.
+                Each record should contain the primary key field as specified in the config.
+            config (Dict[str, Any]):
+                A dictionary where each key is an entity name, and each value is a dictionary
+                containing at least the key 'primary_key', which specifies the field name
+                in the records to use as the primary key.
 
         Returns:
-            dict: dictionary of entities and their primary key values
+            Dict[str, List[Any]]:
+                A dictionary mapping each entity name to a list of extracted primary key values.
+                If an entity has no primary key specified in the config, its value will be an empty list.
+
+        Raises:
+            KeyError:
+                If an entity specified in the config is missing from the data_map.
+            Exception:
+                If an unexpected error occurs during extraction for any entity.
+
+        Notes:
+            - If a record's primary key field is missing, that record is skipped with a warning.
+            - If the primary key value is a dictionary containing a 'submitter_id', that value is used.
+            - Otherwise, the value of the primary key field is used directly.
+            - If the primary key field is None in the config, extraction is skipped for that entity.
+
+        Example:
+            data_map = {
+                "subject": [
+                    {"subjects": "subject_1", ...},
+                    {"subjects": {"submitter_id": "subject_2"}, ...}
+                ]
+            }
+            config = {
+                "subject": {"primary_key": "subjects", ...}
+            }
+            # Returns: {"subject": ["subject_1", "subject_2"]}
         """
-        pk_entities = {}
         logger.info("Extracting primary keys from data_map using config.")
 
-        for config_entity, config_keys in config.items():
-            entity_data = data_map[config_entity]
-            records_list = []
+        def extract_pk_values(entity, records, pk_field):
+            pk_values = []
+            for idx, record in enumerate(records):
+                if pk_field not in record:
+                    logger.warning(
+                        f"Record {idx} in entity '{entity}' is missing the primary key field '{pk_field}'."
+                    )
+                    continue
+                pk = record.get(pk_field)
+                if not pk:
+                    continue
+                if isinstance(pk, dict) and 'submitter_id' in pk:
+                    pk_values.append(pk['submitter_id'])
+                    logger.debug(
+                        f"Entity '{entity}': extracted primary key '{pk['submitter_id']}' from dict."
+                    )
+                else:
+                    pk_values.append(pk)
+                    logger.debug(
+                        f"Entity '{entity}': extracted primary key '{pk}'."
+                    )
+            return pk_values
 
-            for record in entity_data:
-                pk = record.get(config_keys['primary_key'])
-                if pk:
-                    if isinstance(pk, dict) and 'submitter_id' in pk:
-                        records_list.append(pk['submitter_id'])
-                        logger.debug(f"Entity '{config_entity}': extracted primary key '{pk['submitter_id']}' from dict.")
-                    else:
-                        records_list.append(pk)
-                        logger.debug(f"Entity '{config_entity}': extracted primary key '{pk}'.")
-            pk_entities[config_entity] = records_list
-            logger.info(f"Primary keys for entity '{config_entity}': {records_list}")
+        pk_entities = {}
+        for entity, keys in config.items():
+            if entity not in data_map:
+                msg = (
+                    f"Entity '{entity}' specified in config is missing from data_map. "
+                    f"Available entities: {list(data_map.keys())}"
+                )
+                logger.error(msg)
+                raise KeyError(msg)
+
+            pk_field = keys.get('primary_key')
+            if pk_field is None:
+                logger.info(f"No primary key specified for entity '{entity}'. Skipping extraction.")
+                pk_entities[entity] = []
+                continue
+
+            records = data_map[entity]
+            try:
+                pk_values = extract_pk_values(entity, records, pk_field)
+                pk_entities[entity] = pk_values
+                logger.info(f"Primary keys for entity '{entity}': {pk_values}")
+            except Exception as e:
+                logger.error(f"Unexpected error while extracting primary keys for entity '{entity}': {e}")
+                raise Exception(
+                    f"An unexpected error occurred while extracting primary keys for entity '{entity}': {e}"
+                ) from e
+
         return pk_entities
 
     def validate_links(
