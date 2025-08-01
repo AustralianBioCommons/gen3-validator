@@ -249,26 +249,73 @@ class Validate:
         """
         try:
             logger.debug(f"Retrieving validation results for entity: {entity}")
+
+            # Get the validation data for the entity
             data = self.validation_result[entity]
-            logger.debug(f"Data for entity '{entity}': {data}")
-            # index_data = next((item[index_key] for item in data if index_key in item), None)
+            if isinstance(data, list):
+                logger.debug(f"First 2 items of data for entity '{entity}': {data[:2]}")
+            else:
+                logger.debug(f"Data for entity '{entity}': {str(data)[:500]}")
+
+            # Convert index_key to int if it's a string like "index_3"
+            if isinstance(index_key, str):
+                logger.warning(
+                    f"index_key is a string, expected int. index_key: {index_key}. Attempting conversion."
+                )
+                if index_key.startswith("index_"):
+                    try:
+                        index_key = int(index_key.split("_", 1)[1])
+                        logger.info(
+                            f"Converted index_key to int: {index_key} (type: {type(index_key)})"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to convert index_key '{index_key}' to int: {e}"
+                        )
+                        raise Exception(
+                            f"TypeError: Could not convert index_key '{index_key}' to int for entity '{entity}': {e}"
+                        )
+                else:
+                    logger.error(
+                        f"index_key string '{index_key}' does not start with 'index_'."
+                    )
+                    raise Exception(
+                        f"TypeError: index_key '{index_key}' is not a valid format for entity '{entity}'."
+                    )
+
+            # Build the key for the index
             index_name = f"index_{index_key}"
+
+            # Get the data for the specific index
             index_data = data[index_key][index_name]
             logger.debug(f"index_data for index_key '{index_key}': {index_data}")
-            return_list = []
+
+            # Collect results based on result_type
+            results = []
             for obj in index_data:
                 val_result = obj.get("validation_result")
+                if result_type == "ALL" or val_result == result_type:
+                    results.append(obj)
 
-                if result_type == "ALL":
-                    return_list.append(obj)
-                    continue
+            return results
 
-                if val_result == result_type:
-                    return_list.append(obj)
-
-            return return_list
         except Exception as e:
-            logger.error(f"Error in pull_index_of_entity for entity {entity} at index {index_key}: {e}")
+            import traceback
+            logger.error(
+                f"Error in pull_index_of_entity for entity '{entity}' at index '{index_key}': {e}\n"
+                f"Traceback:\n{traceback.format_exc()}"
+            )
+            # Help message for common TypeError
+            if (
+                isinstance(e, TypeError)
+                and "list indices must be integers or slices, not str" in str(e)
+            ):
+                logger.error(
+                    "TypeError likely due to trying to access a list with a string key. "
+                    f"Check if data[{index_key}] is a list when it should be a dict. "
+                    f"data[{index_key}] = "
+                    f"{repr(data[index_key]) if isinstance(data, list) and isinstance(index_key, int) and index_key < len(data) else 'N/A'}"
+                )
             return []
 
 
