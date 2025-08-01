@@ -8,17 +8,13 @@ class TestLinkage:
         Initializes the TestLinkage class with injected dependencies.
 
         Args:
-            schema_resolver (ResolveSchema): An instance of ResolveSchema for
-                schema-related operations.
-            data_parser (ParseData): An instance of ParseData for data parsing
-                operations.
-            root_node (list[str], optional): List of root node names. Defaults
-                to ['subject'].
+            root_node (list[str], optional): List of root node names. These are
+                entities that are allowed to have unmatched foreign keys.
+                Defaults to ['subject'].
         """
         if root_node is None:
             root_node = ['subject']
         self.root_node = root_node
-        
 
     def _find_fk(self, data: dict) -> str:
         """
@@ -134,6 +130,10 @@ class TestLinkage:
         Uses the config to read the entity data from the data_map, and then
         uses the FK key outlined in the config to find the foreign key values.
 
+        For each entity, retrieves the value of the foreign key field (as specified in
+        the config) from each record. If the value is a dictionary with a 'submitter_id',
+        extracts the 'submitter_id'; otherwise, uses the value directly.
+
         Args:
             data_map (Dict[str, List[Dict[str, Any]]]): The data map containing
                 the entity data
@@ -165,6 +165,10 @@ class TestLinkage:
         """
         Uses the config to read the entity data from the data_map, and then
         uses the PK key outlined in the config to find the primary key values.
+
+        For each entity, retrieves the value of the primary key field (as specified in
+        the config) from each record. If the value is a dictionary with a 'submitter_id',
+        extracts the 'submitter_id'; otherwise, uses the value directly.
 
         Args:
             data_map (Dict[str, List[Dict[str, Any]]]): The data map containing
@@ -200,14 +204,21 @@ class TestLinkage:
         from the data map. Then uses the foreign key values to validate the
         primary key values.
 
+        First, validates the config map for correct foreign/primary key relationships.
+        Then, for each entity, checks that all its foreign key values exist among the
+        primary key values of any entity. Returns a dictionary mapping each entity to
+        a list of invalid (unmatched) foreign key values.
+
         Args:
             data_map (Dict[str, List[Dict[str, Any]]]): Contains the data for
                 each entity
             config (Dict[str, Any]): The entity linkage configx
+            root_node (List[str], optional): List of root node names that are allowed to have
+                unmatched foreign keys. Defaults to ['subject'].
 
         Returns:
             Dict[str, List[str]]: Dictionary of entities and their validation
-                results
+                results. If the config is invalid, returns the config validation result.
         """
         if root_node is None:
             root_node = ['subject']
