@@ -390,26 +390,8 @@ class ValidateStats(Validate):
         except Exception as e:
             logger.error(f"Error in count_results_by_entity for entity {entity}: {e}")
         return validation_count
-    
-    def n_errors_per_entity(self, entity: str) -> int:
-        """
-        Returns the number of errors that have validation errors for a given entity.
 
-        Args:
-            entity (str): The name of the entity to check for validation errors.
 
-        Returns:
-            int: The number of rows with validation errors.
-        """
-        try:
-            n_errors = len(self.pull_entity(entity, return_failed=True))
-            logger.info(f"Number of errors per entity {entity}: {n_errors}")
-            return n_errors
-        except Exception as e:
-            logger.error(f"Error in n_errors_per_entity for entity {entity}: {e}")
-            return 0
-    
-    
     def n_errors_per_entry(self, entity: str, index_key: int) -> int:
         """
         Returns the number of validation errors for a given entity and index.
@@ -428,7 +410,7 @@ class ValidateStats(Validate):
         except Exception as e:
             logger.error(f"Error in n_errors_per_entry for entity {entity} at index {index_key}: {e}")
             return 0
-    
+
     def total_validation_errors(self) -> int:
         """
         Calculates the total number of validation errors across all entities.
