@@ -1,5 +1,10 @@
 from typing import Dict, Any, List
 from pydantic import create_model
+import logging
+
+# Set up module-level logger
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class TestLinkage:
@@ -15,6 +20,7 @@ class TestLinkage:
         if root_node is None:
             root_node = ['subject']
         self.root_node = root_node
+        logger.debug(f"Initialized TestLinkage with root_node: {self.root_node}")
 
     def _find_fk(self, data: dict) -> str:
         """
@@ -32,7 +38,9 @@ class TestLinkage:
         """
         for key, value in data.items():
             if isinstance(value, dict) and 'submitter_id' in value:
+                logger.debug(f"Foreign key found: {key} in data: {data}")
                 return key
+        logger.debug(f"No foreign key found in data: {data}")
         return None
 
     def generate_config(self, data_map, link_suffix: str = 's') -> dict:
@@ -54,6 +62,7 @@ class TestLinkage:
             dict: A configuration dictionary with primary and foreign keys for each entity.
         """
         config = {}
+        logger.info("Generating config for data_map entities.")
         for node, data in data_map.items():
             fk = self._find_fk(data[0])
             if fk:
@@ -61,11 +70,14 @@ class TestLinkage:
                     "primary_key": f"{node}{link_suffix}",
                     "foreign_key": f"{fk}"
                 }
+                logger.debug(f"Config for node '{node}': primary_key='{node}{link_suffix}', foreign_key='{fk}'")
             else:
                 config[node] = {
                     "primary_key": f"{node}{link_suffix}",
                     "foreign_key": None
                 }
+                logger.debug(f"Config for node '{node}': primary_key='{node}{link_suffix}', foreign_key=None")
+        logger.info(f"Generated config: {config}")
         return config
 
     def test_config_links(self, config_map: Dict[str, Any], root_node: List[str] = None) -> dict:
@@ -94,6 +106,8 @@ class TestLinkage:
 
         print("=== Validating Config Map ===")
         print(f"Root Node = {root_node}")
+        logger.info("=== Validating Config Map ===")
+        logger.info(f"Root Node = {root_node}")
 
         for key, value in config_map.items():
             fk = value['foreign_key']
@@ -109,18 +123,27 @@ class TestLinkage:
                 # If the key is a root node, ignore the broken link
                 if key not in root_node:
                     broken_links[key] = fk
+                    logger.warning(
+                        f"Broken link found: entity '{key}' with foreign key '{fk}' does not match any primary key."
+                    )
                 else:
                     print(
                         f"WARNING: Ignoring broken link for root node '{key}' "
                         f"with foreign key '{fk}'"
                     )
+                    logger.info(
+                        f"Ignoring broken link for root node '{key}' with foreign key '{fk}'"
+                    )
 
         if len(broken_links) == 0:
             print("Config Map Validated")
+            logger.info("Config Map Validated")
             return "valid"
         else:
             print("Config Map Invalid ('entity': 'foreign_key')")
             print("Broken links:", broken_links)
+            logger.error("Config Map Invalid ('entity': 'foreign_key')")
+            logger.error(f"Broken links: {broken_links}")
             return broken_links
 
     def get_foreign_keys(
@@ -143,6 +166,7 @@ class TestLinkage:
             dict: dictionary of entities and their foreign key values
         """
         fk_entities = {}
+        logger.info("Extracting foreign keys from data_map using config.")
 
         for config_entity, config_keys in config.items():
             entity_data = data_map[config_entity]
@@ -151,12 +175,14 @@ class TestLinkage:
             for record in entity_data:
                 fk = record.get(config_keys['foreign_key'])
                 if fk:
-                    if 'submitter_id' in fk:
+                    if isinstance(fk, dict) and 'submitter_id' in fk:
                         records_list.append(fk['submitter_id'])
+                        logger.debug(f"Entity '{config_entity}': extracted foreign key '{fk['submitter_id']}' from dict.")
                     else:
                         records_list.append(fk)
-
+                        logger.debug(f"Entity '{config_entity}': extracted foreign key '{fk}'.")
             fk_entities[config_entity] = records_list
+            logger.info(f"Foreign keys for entity '{config_entity}': {records_list}")
         return fk_entities
 
     def get_primary_keys(
@@ -179,6 +205,7 @@ class TestLinkage:
             dict: dictionary of entities and their primary key values
         """
         pk_entities = {}
+        logger.info("Extracting primary keys from data_map using config.")
 
         for config_entity, config_keys in config.items():
             entity_data = data_map[config_entity]
@@ -187,12 +214,14 @@ class TestLinkage:
             for record in entity_data:
                 pk = record.get(config_keys['primary_key'])
                 if pk:
-                    if 'submitter_id' in pk:
+                    if isinstance(pk, dict) and 'submitter_id' in pk:
                         records_list.append(pk['submitter_id'])
+                        logger.debug(f"Entity '{config_entity}': extracted primary key '{pk['submitter_id']}' from dict.")
                     else:
                         records_list.append(pk)
-
+                        logger.debug(f"Entity '{config_entity}': extracted primary key '{pk}'.")
             pk_entities[config_entity] = records_list
+            logger.info(f"Primary keys for entity '{config_entity}': {records_list}")
         return pk_entities
 
     def validate_links(
@@ -224,16 +253,20 @@ class TestLinkage:
             root_node = ['subject']
 
         # validating config map
+        logger.info("Validating config map before link validation.")
         valid_config = self.test_config_links(config, root_node=root_node)
         if valid_config != "valid":
             print("Invalid Config Map")
             print(config)
+            logger.error("Invalid Config Map")
+            logger.error(f"Config: {config}")
             return valid_config
 
         fk_entities = self.get_foreign_keys(data_map, config)
         pk_entities = self.get_primary_keys(data_map, config)
 
         print("=== Validating Links ===")
+        logger.info("=== Validating Links ===")
 
         validation_results = {}
         for entity, fk_values in fk_entities.items():
@@ -247,4 +280,12 @@ class TestLinkage:
                 f"Entity '{entity}' has {len(invalid_keys)} invalid foreign keys: "
                 f"{invalid_keys}"
             )
+            if invalid_keys:
+                logger.warning(
+                    f"Entity '{entity}' has {len(invalid_keys)} invalid foreign keys: {invalid_keys}"
+                )
+            else:
+                logger.info(
+                    f"Entity '{entity}' has no invalid foreign keys."
+                )
         return validation_results
