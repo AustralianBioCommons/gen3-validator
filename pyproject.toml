@@ -1,7 +1,7 @@
 [project]
 name = "gen3_validator"
 version = "1.0.0"
-description = "Performs validation of json objects to a gen3 jsonschema. Also provides tools to validate metadata linkage between data nodes."
+description = "Comprehensive toolkit for resolving Gen3 JSON schemas, validating JSON metadata against schemas, and verifying linkage integrity between data nodes. Includes utilities for parsing Excel metadata templates, generating linkage configuration maps, orchestrating schema validation, and producing detailed validation reports and statistics"
 authors = [
     {name = "JoshuaHarris391",email = "harjo391@gmail.com"}
 ]
@@ -16,7 +16,7 @@ dependencies = [
     "typing >=3.7.4.3",
     "pytest >=8.3.4",
     "uuid >=1.30",
-    "pyfakefs >=5.9.1"
+    "pyfakefs >=4.7.0"
 ]
 
 [build-system]
