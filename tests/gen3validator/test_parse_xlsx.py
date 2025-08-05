@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import json
-from gen3_validator.parsers.parse_xlsx import ParseXlsxMetadata
+from gen3validator.parsers.parse_xlsx import ParseXlsxMetadata
 from unittest.mock import patch, MagicMock
 
 

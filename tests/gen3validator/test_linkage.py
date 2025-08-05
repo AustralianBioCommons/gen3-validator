@@ -1,5 +1,5 @@
 import pytest
-from gen3_validator.linkage import Linkage
+from gen3validator.linkage import Linkage
 
 @pytest.fixture
 def fixture_root_node():
