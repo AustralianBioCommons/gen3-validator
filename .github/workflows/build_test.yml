@@ -24,16 +24,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
 
-      # - name: Configure Poetry to use in-project venv
-      #   run: poetry config virtualenvs.in-project true
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
+      - name: Configure Poetry to use in-project venv
+        run: poetry config virtualenvs.in-project true
 
       - name: Install dependencies
         run: poetry install
@@ -67,14 +59,6 @@ jobs:
 
       - name: Configure Poetry to use in-project venv
         run: poetry config virtualenvs.in-project true
-
-      - name: Restore cached dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
 
       - name: Install dependencies
         run: poetry install
