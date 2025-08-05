@@ -12,8 +12,8 @@ With this tool, you can:
 
 ## Installation
 ```bash
-pip install gen3validator
-pip show gen3validator
+pip install gen3_validator
+pip show gen3_validator
 ```
 ---
 

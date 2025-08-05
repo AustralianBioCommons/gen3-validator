@@ -1,6 +1,6 @@
 ```python
-import gen3validator
-from gen3validator.logging_config import setup_logging
+import gen3_validator
+from gen3_validator.logging_config import setup_logging
 setup_logging()
 ```
 
@@ -9,8 +9,8 @@ setup_logging()
 
 
 ```python
-# ResolverClass = gen3validator.ResolveSchema(schema_path = "../schema/gen3_test_schema.json")
-xlsxData = gen3validator.ParseXlsxMetadata(xlsx_path = "/Users/harrijh/projects/gen3-data-validator/data/lipid_metadata_example.xlsx", skip_rows=1)
+# ResolverClass = gen3_validator.ResolveSchema(schema_path = "../schema/gen3_test_schema.json")
+xlsxData = gen3_validator.ParseXlsxMetadata(xlsx_path = "/Users/harrijh/projects/gen3-data-validator/data/lipid_metadata_example.xlsx", skip_rows=1)
 xlsxData.parse_metadata_template()
 xlsxData.write_dict_to_json(xlsx_data_dict=xlsxData.xlsx_data_dict, output_dir="/Users/harrijh/projects/gen3-data-validator/data/restricted/lipid_metadata_example")
 ```
@@ -21,7 +21,7 @@ xlsxData.write_dict_to_json(xlsx_data_dict=xlsxData.xlsx_data_dict, output_dir="
 
 
 ```python
-Resolver = gen3validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
+Resolver = gen3_validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
 Resolver.resolve_schema()
 ```
 
@@ -45,7 +45,7 @@ Resolver.schema_resolved
 
 ```python
 # Testing linkage for test data that passes
-Data = gen3validator.ParseData(data_folder_path = "../tests/data/pass")
+Data = gen3_validator.ParseData(data_folder_path = "../tests/data/pass")
 ```
 
 To list the files read into the Data instance, you can use the following code:
@@ -105,9 +105,9 @@ Also, you can define the linkage configuration map yourself, but you need to mak
 
 
 ```python
-import gen3validator
-DataPass = gen3validator.ParseData(data_folder_path = "../tests/data/pass")
-LinkagePass = gen3validator.Linkage()
+import gen3_validator
+DataPass = gen3_validator.ParseData(data_folder_path = "../tests/data/pass")
+LinkagePass = gen3_validator.Linkage()
 link_pass_config = LinkagePass.generate_config(DataPass.data_dict)
 link_pass_config
 ```
@@ -140,9 +140,9 @@ Where `entity_name_1` and `entity_name_2` are the names of the entities in the d
 
 
 ```python
-import gen3validator
-DataPass = gen3validator.ParseData(data_folder_path = "../tests/data/pass")
-LinkagePass = gen3validator.Linkage()
+import gen3_validator
+DataPass = gen3_validator.ParseData(data_folder_path = "../tests/data/pass")
+LinkagePass = gen3_validator.Linkage()
 link_pass_config = LinkagePass.generate_config(DataPass.data_dict)
 LinkagePass.validate_links(data_map = DataPass.data_dict, config = link_pass_config, root_node = 'subject')
 ```
@@ -152,8 +152,8 @@ Testing linkage for test data that fails:
 
 
 ```python
-DataFail = gen3validator.ParseData(data_folder_path = "../tests/data/fail")
-LinkageFail = gen3validator.Linkage()
+DataFail = gen3_validator.ParseData(data_folder_path = "../tests/data/fail")
+LinkageFail = gen3_validator.Linkage()
 link_fail_config = LinkageFail.generate_config(DataFail.data_dict)
 LinkageFail.validate_links(data_map = DataFail.data_dict, config = link_fail_config, root_node = 'subject')
 ```
@@ -181,12 +181,12 @@ Creating the validation class
 
 
 ```python
-import gen3validator
+import gen3_validator
 
-resolver = gen3validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
+resolver = gen3_validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
 resolver.resolve_schema()
-data = gen3validator.ParseData(data_folder_path = "../tests/data/fail")
-validator = gen3validator.Validate(data_map=data.data_dict, resolved_schema=resolver.schema_resolved)
+data = gen3_validator.ParseData(data_folder_path = "../tests/data/fail")
+validator = gen3_validator.Validate(data_map=data.data_dict, resolved_schema=resolver.schema_resolved)
 
 ```
 
@@ -315,14 +315,14 @@ First we create a validator object and validate the data with the schema using t
 
 
 ```python
-import gen3validator
-from gen3validator.logging_config import setup_logging
+import gen3_validator
+from gen3_validator.logging_config import setup_logging
 setup_logging(level="INFO")
 
-resolver = gen3validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
+resolver = gen3_validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
 resolver.resolve_schema()
-data = gen3validator.ParseData(data_folder_path = "../tests/data/fail")
-validator = gen3validator.Validate(data_map=data.data_dict, resolved_schema=resolver.schema_resolved)
+data = gen3_validator.ParseData(data_folder_path = "../tests/data/fail")
+validator = gen3_validator.Validate(data_map=data.data_dict, resolved_schema=resolver.schema_resolved)
 validator.validate_schema()
 ```
 
@@ -330,7 +330,7 @@ We then pass the validator instance to the `ValidateStats` class to get the summ
 
 
 ```python
-validate_stats = gen3validator.ValidateStats(validator)
+validate_stats = gen3_validator.ValidateStats(validator)
 ```
 
 To get a high level summary we can call the `.summary_stats` method on the `ValidateStats` instance.
@@ -391,17 +391,17 @@ Creating ValidateSummary instance
 
 
 ```python
-import gen3validator
-from gen3validator.logging_config import setup_logging
+import gen3_validator
+from gen3_validator.logging_config import setup_logging
 setup_logging(level="INFO")
 
-resolver = gen3validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
+resolver = gen3_validator.ResolveSchema(schema_path = "../tests/schema/gen3_test_schema.json")
 resolver.resolve_schema()
-data = gen3validator.ParseData(data_folder_path = "../tests/data/fail")
-validator = gen3validator.Validate(data_map=data.data_dict, resolved_schema=resolver.schema_resolved)
+data = gen3_validator.ParseData(data_folder_path = "../tests/data/fail")
+validator = gen3_validator.Validate(data_map=data.data_dict, resolved_schema=resolver.schema_resolved)
 validator.validate_schema() # make sure validation has been run by calling .validate_schema()
 
-Summary = gen3validator.ValidateSummary(validator) 
+Summary = gen3_validator.ValidateSummary(validator) 
 
 ```
 

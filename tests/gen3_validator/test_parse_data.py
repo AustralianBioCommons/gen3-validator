@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import json
-from gen3validator.parsers.parse_data import ParseData
+from gen3_validator.parsers.parse_data import ParseData
 from unittest.mock import patch, MagicMock
 
 

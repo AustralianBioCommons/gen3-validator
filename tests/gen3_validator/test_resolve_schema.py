@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import json
-from gen3validator.resolve_schema import ResolveSchema
+from gen3_validator.resolve_schema import ResolveSchema
 from unittest.mock import patch, MagicMock, mock_open
 import os
 
@@ -21,7 +21,7 @@ def ResolveSchema_instance(test_schema_path):
 
 def test_read_json(ResolveSchema_instance, test_schema_path):
     mock_data = [{"submitter_id": "subject-example-990910001"}]
-    with patch("gen3validator.resolve_schema.open",
+    with patch("gen3_validator.resolve_schema.open",
                mock_open(read_data=json.dumps(mock_data))):
         result = ResolveSchema_instance.read_json(test_schema_path)
         assert result == mock_data
