@@ -1,10 +1,7 @@
 jsonschema
-matplotlib
 pandas
 numpy
-openpyxl
 pydantic
 typing
 pytest
 uuid
-pyfakefs

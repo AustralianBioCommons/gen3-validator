@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="gen3_data_validator",  # Name of your package
+    name="gen3_validator",  # Name of your package
     version="0.1",  # Version number
     packages=find_packages(where="src"),  # Automatically find packages in src/
     package_dir={"": "src"},  # Tell setuptools that packages are in src/

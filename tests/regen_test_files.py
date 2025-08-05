@@ -1,6 +1,6 @@
 import json
 import os
-import gen3_data_validator
+import gen3_validator
 
 # Get the directory where the current script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -45,7 +45,7 @@ def main():
 
     # Resolve schema and write resolved schema to file
     print("Resolving schema...")
-    resolver = gen3_data_validator.ResolveSchema(schema_path=schema_path)
+    resolver = gen3_validator.ResolveSchema(schema_path=schema_path)
     resolver.resolve_schema()
     os.makedirs(os.path.dirname(resolved_schema_path), exist_ok=True)
     with open(resolved_schema_path, "w") as f:
@@ -54,7 +54,7 @@ def main():
 
     # Parse fail data and write data map to file
     print("Parsing fail data...")
-    data_fail = gen3_data_validator.ParseData(data_folder_path=fail_data_folder)
+    data_fail = gen3_validator.ParseData(data_folder_path=fail_data_folder)
     os.makedirs(os.path.dirname(fail_data_map_path), exist_ok=True)
     with open(fail_data_map_path, "w") as f:
         json.dump(data_fail.data_dict, f)
@@ -62,7 +62,7 @@ def main():
 
     # Parse pass data and write data map to file
     print("Parsing pass data...")
-    data_pass = gen3_data_validator.ParseData(data_folder_path=pass_data_folder)
+    data_pass = gen3_validator.ParseData(data_folder_path=pass_data_folder)
     os.makedirs(os.path.dirname(pass_data_map_path), exist_ok=True)
     with open(pass_data_map_path, "w") as f:
         json.dump(data_pass.data_dict, f)

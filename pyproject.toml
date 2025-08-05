@@ -1,0 +1,24 @@
+[project]
+name = "gen3_validator"
+version = "1.0.0"
+description = "Performs validation of json objects to a gen3 jsonschema. Also provides tools to validate metadata linkage between data nodes."
+authors = [
+    {name = "JoshuaHarris391",email = "harjo391@gmail.com"}
+]
+license = {text = "Apache 2.0"}
+readme = "README.md"
+requires-python = ">=3.9.5"
+dependencies = [
+    "jsonschema >=4.23.0",
+    "pandas >=2.2.3",
+    "numpy >=2.0.2",
+    "pydantic >=2.10.6",
+    "typing >=3.7.4.3",
+    "pytest >=8.3.4",
+    "uuid >=1.30",
+    "pyfakefs >=5.9.1"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
