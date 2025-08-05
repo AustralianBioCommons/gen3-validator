@@ -1,23 +1,48 @@
-# gen3-data-validator
-Performs validation of json objects to a gen3 jsonschema. Also provides tools to validate metadata linkage between data nodes.
+# Gen3 Validator
 
-## Setup: Python Virtual Environment
+**Gen3 Validator** is a Python toolkit designed to make working with Gen3 metadata schemas and data validation straightforward for developers.
 
-1. **Ensure Python is Installed**: Download from [python.org](https://www.python.org/downloads/).
+With this tool, you can:
 
-2. **Create Virtual Environment**: In your project directory, run:
-   ```bash
-   python3 -m venv .venv
-   ```
+- **Resolve and flatten Gen3 JSON schemas** so you can work with them programmatically.
+- **Validate JSON metadata files** against Gen3 schemas, catching schema violations early in your pipeline.
+- **Check linkage integrity** between data nodes (e.g., ensuring all sample-to-subject references are valid).
+- **Parse Excel-based metadata templates** and convert them to JSON for Gen3 ingestion.
+- **Get detailed validation results and summary stats** as Python data structures or pandas DataFrames, making it easy to integrate with your own scripts or reporting tools.
 
-3. **Activate Virtual Environment**:
-   - **macOS/Linux**: `source .venv/bin/activate`
+## Installation
+```bash
+pip install gen3_validator
+pip show gen3_validator
+```
+---
 
-4. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Dev Setup
+1. Make sure you have [poetry](https://python-poetry.org/docs/#installing-with-pipx) installed.
+2. Clone the repository.
+3. Run the following command to activate the virtual environment.
+```bash
+eval $(poetry env activate)
+```
+4. Run the following command to install the dependencies.
+```bash
+poetry install
+```
+5. Run the following command to run the tests.
+```bash
+pytest -vv tests/
+```
+---
 
-5. **Deactivate**: Run `deactivate` when done.
+## How to use
 
+See the [usage](docs/usage.md) page for more information.
+- I recommend you clone this repo, and walk through the examples in the [usage](docs/usage.md) page. The usage examples load data from the `tests/data` directory so you can see how the data is structured.
 
+## Class Documentation
+
+See the [classes](docs/classes.md) page for more information.
+
+## License
+
+See the [license](LICENSE) page for more information.
